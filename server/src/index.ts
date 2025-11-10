@@ -12,7 +12,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Mount your route
-app.use(healthRouter);
+app.use("/api", healthRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
