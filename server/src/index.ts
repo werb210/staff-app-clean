@@ -1,9 +1,12 @@
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
+import dotenv from "dotenv";
 
 import healthRouter from "./routes/health";
 import applicationsRouter from "./routes/applications";
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
