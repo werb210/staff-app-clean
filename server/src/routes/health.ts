@@ -1,19 +1,20 @@
+/**
+ * Health check route
+ * Responds with server status and timestamp.
+ */
+
 import { Router, Request, Response } from "express";
 import { logInfo } from "../utils/logger.js";
 
-/**
- * Health check router for the API.
- * Responds with a JSON object confirming the service is running.
- */
-const healthRouter = Router();
+const healthRouter: Router = Router();
 
-/**
- * GET /api/health
- * Returns basic server health information
- */
+// GET /api/health
 healthRouter.get("/", (_req: Request, res: Response) => {
   logInfo("GET /api/health invoked");
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  });
 });
 
 export default healthRouter;
