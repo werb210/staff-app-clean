@@ -1,5 +1,6 @@
 /**
- * Environment utilities for loading and validating environment variables.
+ * Environment utility functions.
+ * Handles loading and validating environment variables.
  */
 
 import dotenv from "dotenv";
@@ -8,11 +9,8 @@ import { logDebug, logInfo, logWarn } from "./logger.js";
 dotenv.config();
 
 /**
- * Ensures that a required environment variable is present.
- * @param name - The name of the environment variable.
- * @param fallback - Optional fallback value if not set in process.env.
- * @returns The environment variable value.
- * @throws If the variable is missing and no fallback is provided.
+ * Ensure that an environment variable is set, or return fallback if provided.
+ * Throws an error if the variable is missing and no fallback is given.
  */
 export function ensureEnvVar(name: string, fallback?: string): string {
   logInfo("ensureEnvVar invoked");
@@ -26,7 +24,7 @@ export function ensureEnvVar(name: string, fallback?: string): string {
 }
 
 /**
- * Returns true if the current environment is production.
+ * Returns true if running in production environment.
  */
 export function isProduction(): boolean {
   logInfo("isProduction invoked");
@@ -36,7 +34,7 @@ export function isProduction(): boolean {
 }
 
 /**
- * Loads environment configuration and prints debug info.
+ * Loads environment configuration and logs current snapshot.
  */
 export function loadEnvironment(): void {
   logInfo("loadEnvironment invoked");
