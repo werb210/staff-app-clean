@@ -1,6 +1,5 @@
 /**
- * Logger utility for consistent logging across the application.
- * Provides info, warn, error, and debug levels.
+ * Logger utility functions for consistent logging across the application.
  */
 
 export function logInfo(message: string): void {
