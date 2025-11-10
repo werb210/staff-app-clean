@@ -9,5 +9,11 @@
     "skipLibCheck": true,
     "outDir": "dist"
   },
-  "include": ["routes/**/*", "services/**/*", "utils/**/*", "schemas/**/*", "index.ts"]
+  "include": [
+    "routes/**/*",
+    "services/**/*",
+    "utils/**/*",
+    "schemas/**/*",
+    "index.ts"
+  ]
 }
