@@ -11,12 +11,19 @@ import {
   publicApplicationSchema,
   submitApplicationSchema
 } from "../schemas/application.schema.js";
+import {
+  documentUploadSchema,
+  type DocumentStatus,
+  type DocumentUploadInput
+} from "../schemas/document.schema.js";
+import { documentService } from "./documentService.js";
 
 /**
  * Simple in-memory store for application records used by the stub routes.
  */
 class ApplicationService {
   private applications: ApplicationSummary[] = [];
+  private applicationDocuments = new Map<string, DocumentStatus[]>();
 
   /**
    * Returns the list of stubbed applications.
@@ -30,16 +37,7 @@ class ApplicationService {
    */
   createApplication(payload: CreateApplicationInput): ApplicationSummary {
     const validated = createApplicationSchema.parse(payload);
-    const timestamp = new Date().toISOString();
-    const summary = applicationSummarySchema.parse({
-      id: randomUUID(),
-      applicant: validated.applicant,
-      loanDetails: validated.loanDetails,
-      status: "submitted",
-      createdAt: timestamp,
-      updatedAt: timestamp
-    });
-
+    const summary = this.buildApplicationSummary(validated, "submitted");
     this.applications.push(summary);
     return summary;
   }
@@ -48,8 +46,10 @@ class ApplicationService {
    * Alias used by modular routes to create a draft application.
    */
   async createDraftApplication(payload: CreateApplicationInput): Promise<ApplicationSummary> {
-    const draft = this.createApplication(payload);
-    return { ...draft, status: "draft" };
+    const validated = createApplicationSchema.parse(payload);
+    const draft = this.buildApplicationSummary(validated, "draft");
+    this.applications.push(draft);
+    return draft;
   }
 
   /**
@@ -123,6 +123,33 @@ class ApplicationService {
         createdAt: new Date().toISOString()
       })
     ];
+  }
+
+  /**
+   * Registers a supporting document for an application by delegating to the document service.
+   */
+  async uploadSupportingDocument(payload: DocumentUploadInput): Promise<DocumentStatus> {
+    const validated = documentUploadSchema.parse(payload);
+    const document = await documentService.uploadDocument(validated);
+    const existing = this.applicationDocuments.get(validated.applicationId) ?? [];
+    existing.push(document);
+    this.applicationDocuments.set(validated.applicationId, existing);
+    return document;
+  }
+
+  private buildApplicationSummary(
+    payload: CreateApplicationInput,
+    status: ApplicationSummary["status"]
+  ): ApplicationSummary {
+    const timestamp = new Date().toISOString();
+    return applicationSummarySchema.parse({
+      id: randomUUID(),
+      applicant: payload.applicant,
+      loanDetails: payload.loanDetails,
+      status,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    });
   }
 }
 
