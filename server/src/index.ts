@@ -19,7 +19,7 @@ import tasksRouter from "./routes/tasks.js";
 import usersRouter from "./routes/users.js";
 import pipelineRouter from "./routes/pipeline.js";
 
-// API modular routers (Codex-generated)
+// API modular routers (Codex-generated stubs)
 import createApplicationRouter from "./routes/api/applications/create.js";
 import submitApplicationRouter from "./routes/api/applications/submit.js";
 import uploadApplicationDocumentRouter from "./routes/api/applications/upload.js";
