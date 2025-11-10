@@ -13,8 +13,6 @@
     "./routes/**/*",
     "./services/**/*",
     "./utils/**/*",
-    "./schemas/**/*",
-    "./types/**/*",
     "./index.ts"
   ]
 }
