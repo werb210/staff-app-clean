@@ -1,19 +1,22 @@
-import { config } from "dotenv";
-import { logInfo } from "./logger.js";
+import dotenv from "dotenv";
+import { logDebug, logError } from "./logger.js";
 
-let isLoaded = false;
+let loaded = false;
 
+/**
+ * Loads environment variables once for the process.
+ */
 export const loadEnv = (): void => {
-  if (isLoaded) {
+  if (loaded) {
     return;
   }
 
-  const result = config();
+  const result = dotenv.config();
   if (result.error) {
-    logInfo("No .env file found, relying on process environment");
+    logError("Failed to load .env file", result.error);
   } else {
-    logInfo("Environment variables loaded from .env");
+    logDebug("Environment variables loaded");
   }
 
-  isLoaded = true;
+  loaded = true;
 };
