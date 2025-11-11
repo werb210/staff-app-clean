@@ -1,80 +1,39 @@
 import { Router } from "express";
+import { applicationService } from "../services/applicationService.js";
 import {
-  ApplicationCompleteSchema,
   ApplicationCreateSchema,
-  ApplicationQuerySchema,
-  ApplicationSubmitSchema,
-  ApplicationUpdateSchema,
-} from "../schemas/applicationSchemas.js";
-import { applicationsService } from "../services/applicationsService.js";
-import { logInfo } from "../utils/logger.js";
-import { parseWithSchema } from "../utils/validation.js";
+  ApplicationStatusUpdateSchema,
+} from "../schemas/application.schema.js";
 
 const router = Router();
 
-router.get("/", (req, res, next) => {
-  try {
-    logInfo("GET /api/applications", req.query);
-    const query = parseWithSchema(ApplicationQuerySchema, req.query);
-    const applications = applicationsService.listApplications(query.status);
-    res.json({ message: "OK", data: applications });
-  } catch (error) {
-    next(error);
-  }
+// Lists every application currently tracked by the service.
+router.get("/", (_req, res) => {
+  const applications = applicationService.listApplications();
+  res.json({ message: "OK", data: applications });
 });
 
-router.post("/", (req, res, next) => {
-  try {
-    logInfo("POST /api/applications", req.body);
-    const payload = parseWithSchema(ApplicationCreateSchema, req.body);
-    const application = applicationsService.createApplication(payload);
-    res.status(201).json({ message: "OK", data: application });
-  } catch (error) {
-    next(error);
-  }
+// Fetches a single application by identifier.
+router.get("/:id", (req, res) => {
+  const application = applicationService.getApplication(req.params.id);
+  res.json({ message: "OK", data: application });
 });
 
-router.put("/:id", (req, res, next) => {
-  try {
-    logInfo("PUT /api/applications/:id", { id: req.params.id, body: req.body });
-    const payload = parseWithSchema(ApplicationUpdateSchema, req.body);
-    const application = applicationsService.updateApplication(req.params.id, payload);
-    res.json({ message: "OK", data: application });
-  } catch (error) {
-    next(error);
-  }
+// Creates a new application after validating the input payload.
+router.post("/", (req, res) => {
+  const payload = ApplicationCreateSchema.parse(req.body);
+  const created = applicationService.createApplication(payload);
+  res.status(201).json({ message: "OK", data: created });
 });
 
-router.put("/:id/submit", (req, res, next) => {
-  try {
-    logInfo("PUT /api/applications/:id/submit", { id: req.params.id, body: req.body });
-    const payload = parseWithSchema(ApplicationSubmitSchema, { ...req.body, id: req.params.id });
-    const application = applicationsService.submitApplication(payload.id, payload.submittedBy);
-    res.json({ message: "OK", data: application });
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.put("/:id/complete", (req, res, next) => {
-  try {
-    logInfo("PUT /api/applications/:id/complete", { id: req.params.id, body: req.body });
-    const payload = parseWithSchema(ApplicationCompleteSchema, { ...req.body, id: req.params.id });
-    const application = applicationsService.completeApplication(payload.id, payload.completedBy);
-    res.json({ message: "OK", data: application });
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.delete("/:id", (req, res, next) => {
-  try {
-    logInfo("DELETE /api/applications/:id", { id: req.params.id });
-    const removed = applicationsService.deleteApplication(req.params.id);
-    res.json({ message: "OK", removed });
-  } catch (error) {
-    next(error);
-  }
+// Updates the status of an existing application.
+router.post("/:id/status", (req, res) => {
+  const payload = ApplicationStatusUpdateSchema.parse({
+    id: req.params.id,
+    status: req.body.status,
+  });
+  const updated = applicationService.updateStatus(payload.id, payload.status);
+  res.json({ message: "OK", data: updated });
 });
 
 export default router;
