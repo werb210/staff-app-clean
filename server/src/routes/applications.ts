@@ -1,16 +1,18 @@
+// Auto-generated stub by Codex
+// Stub router for GET /api/applications
+
 import { Router } from "express";
+
 const router = Router();
 
-// GET stub
+// Existing GET handler
 router.get("/", (_req, res) => {
   res.json({ message: "OK" });
 });
 
-// POST real
+// Add POST handler for testing
 router.post("/", (req, res) => {
-  const application = req.body;
-  // TODO: Add validation, persistence (DB), and business logic
-  res.json({ message: "Application received", data: application });
+  res.json({ message: "OK" });
 });
 
 export default router;
