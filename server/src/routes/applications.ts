@@ -1,14 +1,22 @@
 import { Router } from "express";
+import { v4 as uuidv4 } from "uuid";
+
 const router = Router();
 
-// GET handler
+// In-memory store for testing
+const applications: Record<string, any> = {};
+
+// GET all applications
 router.get("/", (_req, res) => {
-  res.json({ message: "OK" });
+  res.json(Object.values(applications));
 });
 
-// POST handler for testing
+// POST new application
 router.post("/", (req, res) => {
-  res.json({ message: "OK" });
+  const id = uuidv4();
+  const appData = { id, ...req.body };
+  applications[id] = appData;
+  res.status(201).json(appData);
 });
 
 export default router;
