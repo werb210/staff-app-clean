@@ -1,16 +1,18 @@
+// Auto-generated stub by Codex
+// Stub router for GET /api/documents
+
 import { Router } from "express";
+
 const router = Router();
 
-// GET stub
+// Existing GET handler
 router.get("/", (_req, res) => {
   res.json({ message: "OK" });
 });
 
-// POST real
+// Add POST handler for testing
 router.post("/", (req, res) => {
-  const document = req.body;
-  // TODO: Add validation, save to DB or storage, link to application
-  res.json({ message: "Document received", data: document });
+  res.json({ message: "OK" });
 });
 
 export default router;
