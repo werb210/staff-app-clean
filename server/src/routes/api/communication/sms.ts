@@ -1,12 +1,13 @@
-// Auto-generated stub by Codex
-// Stub router for POST /api/communication/sms
-
 import { Router } from "express";
-
 const router = Router();
+const messages: Record<string, any> = {};
 
-router.post("/", (_req, res) => {
-  res.json({ message: "OK" });
+router.get("/", (_req, res) => res.json(Object.values(messages)));
+
+router.post("/", (req, res) => {
+  const id = `SMS-${Date.now()}`;
+  messages[id] = req.body;
+  res.status(201).json(messages[id]);
 });
 
 export default router;
