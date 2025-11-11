@@ -1,10 +1,13 @@
 import { Router } from "express";
-import { lenderProductService } from "../../services/lenderProductService.js";
-
 const router = Router();
+const products: Record<string, any> = {};
 
-router.get("/", (_req, res) => {
-  res.json({ data: lenderProductService.listProducts() });
+router.get("/", (_req, res) => res.json(Object.values(products)));
+
+router.post("/", (req, res) => {
+  const id = `LP-${Date.now()}`;
+  products[id] = req.body;
+  res.status(201).json(products[id]);
 });
 
 export default router;
