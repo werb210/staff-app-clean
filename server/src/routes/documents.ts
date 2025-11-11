@@ -1,14 +1,28 @@
 import { Router } from "express";
+
 const router = Router();
 
-// GET handler
+// In-memory store for testing
+const documents: Record<string, any> = {};
+
+// GET all documents
 router.get("/", (_req, res) => {
-  res.json({ message: "OK" });
+  res.json(Object.values(documents));
 });
 
-// POST handler for testing
+// POST new document
 router.post("/", (req, res) => {
-  res.json({ message: "OK" });
+  const { applicationId, fileName, mimeType, content } = req.body;
+
+  if (!applicationId || !fileName || !mimeType || !content) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const id = `${applicationId}-${Date.now()}`;
+  const docData = { id, applicationId, fileName, mimeType, content };
+  documents[id] = docData;
+
+  res.status(201).json(docData);
 });
 
 export default router;
