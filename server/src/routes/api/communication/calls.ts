@@ -1,12 +1,13 @@
-// Auto-generated stub by Codex
-// Stub router for POST /api/communication/calls
-
 import { Router } from "express";
-
 const router = Router();
+const calls: Record<string, any> = {};
 
-router.post("/", (_req, res) => {
-  res.json({ message: "OK" });
+router.get("/", (_req, res) => res.json(Object.values(calls)));
+
+router.post("/", (req, res) => {
+  const id = `CALL-${Date.now()}`;
+  calls[id] = req.body;
+  res.status(201).json(calls[id]);
 });
 
 export default router;
