@@ -1,28 +1,16 @@
 import { Router } from "express";
-
 const router = Router();
 
-// In-memory store for testing
-const documents: Record<string, any> = {};
-
-// GET all documents
+// GET stub
 router.get("/", (_req, res) => {
-  res.json(Object.values(documents));
+  res.json({ message: "OK" });
 });
 
-// POST new document
+// POST real
 router.post("/", (req, res) => {
-  const { applicationId, fileName, mimeType, content } = req.body;
-
-  if (!applicationId || !fileName || !mimeType || !content) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
-  const id = `${applicationId}-${Date.now()}`;
-  const docData = { id, applicationId, fileName, mimeType, content };
-  documents[id] = docData;
-
-  res.status(201).json(docData);
+  const document = req.body;
+  // TODO: Add validation, save to DB or storage, link to application
+  res.json({ message: "Document received", data: document });
 });
 
 export default router;
