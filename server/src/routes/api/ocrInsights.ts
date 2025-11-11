@@ -1,18 +1,13 @@
 import { Router } from "express";
-import { extractTextFromDocument } from "../../services/ocrService.js";
-import { aiService } from "../../services/aiService.js";
-
 const router = Router();
+const ocrData: Record<string, any> = {};
 
-router.get("/", async (req, res, next) => {
-  try {
-    const filePath = typeof req.query.filePath === "string" ? req.query.filePath : "sample-document.pdf";
-    const text = await extractTextFromDocument(filePath);
-    const insights = await aiService.extractInsightsFromOcr(text);
-    res.json({ data: { text, insights } });
-  } catch (error) {
-    next(error);
-  }
+router.get("/", (_req, res) => res.json(Object.values(ocrData)));
+
+router.post("/", (req, res) => {
+  const id = `OCR-${Date.now()}`;
+  ocrData[id] = req.body;
+  res.status(201).json(ocrData[id]);
 });
 
 export default router;
