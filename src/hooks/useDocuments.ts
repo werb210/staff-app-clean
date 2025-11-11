@@ -4,7 +4,7 @@ import {
   getDocumentVersions,
   listDocuments,
   updateDocumentStatus,
-  uploadDocument,
+  uploadDocument as uploadDocumentApi,
 } from "../api/documents";
 import { ApplicationDocument, DocumentUploadInput, DocumentVersion } from "../types/api";
 
@@ -33,7 +33,7 @@ export function useDocuments(applicationId?: string) {
 
   const uploadDocument = useCallback(
     async (payload: DocumentUploadInput) => {
-      const result = await uploadDocument(payload);
+      const result = await uploadDocumentApi(payload);
       setDocuments((prev) => [result.metadata, ...prev.filter((doc) => doc.id !== result.metadata.id)]);
       return result;
     },
