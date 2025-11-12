@@ -6,55 +6,97 @@ import {
   getApplicationDocuments,
   getApplicationLenders,
   moveCard,
-  type PipelineStage,
 } from "../services/pipelineService.js";
+import { PipelineTransitionSchema } from "../schemas/pipeline.schema.js";
 
+/**
+ * GET /api/pipeline/stages
+ */
 export const getStages = (_req: Request, res: Response) => {
-  const stages = getAllStages();
-  res.json({ data: stages });
-};
-
-export const getCards = (_req: Request, res: Response) => {
-  const cards = getAllCards();
-  res.json({ data: cards });
-};
-
-export const moveCardHandler = (req: Request, res: Response) => {
-  const stage = req.body.stage as PipelineStage | undefined;
-  if (!stage) {
-    return res.status(400).json({ message: "stage is required" });
-  }
   try {
-    const card = moveCard(req.params.id, stage);
-    return res.json({ data: card });
-  } catch (error) {
-    return res.status(400).json({ message: (error as Error).message });
+    const stages = getAllStages();
+    return res.json({ data: stages });
+  } catch (err) {
+    return res.status(500).json({ message: (err as Error).message });
   }
 };
 
+/**
+ * GET /api/pipeline/cards
+ */
+export const getCards = (_req: Request, res: Response) => {
+  try {
+    const cards = getAllCards();
+    return res.json({ data: cards });
+  } catch (err) {
+    return res.status(500).json({ message: (err as Error).message });
+  }
+};
+
+/**
+ * PUT /api/pipeline/cards/:id/move
+ * Uses your updated PipelineTransitionSchema
+ * Applies Big Fix rule: never trust client; always validate transition
+ */
+export const moveCardHandler = (req: Request, res: Response) => {
+  const parsed = PipelineTransitionSchema.safeParse({
+    applicationId: req.params.id,
+    fromStage: req.body.fromStage,
+    toStage: req.body.toStage,
+    assignedTo: req.body.assignedTo,
+    note: req.body.note,
+  });
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: "Invalid stage transition",
+      issues: parsed.error.errors,
+    });
+  }
+
+  try {
+    const updated = moveCard(parsed.data);
+    return res.json({ data: updated });
+  } catch (err) {
+    return res.status(400).json({ message: (err as Error).message });
+  }
+};
+
+/**
+ * GET /api/pipeline/cards/:id/application
+ * Drawer → Application tab
+ */
 export const getApplicationDataHandler = (req: Request, res: Response) => {
   try {
     const data = getApplicationData(req.params.id);
     return res.json({ data });
-  } catch (error) {
-    return res.status(404).json({ message: (error as Error).message });
+  } catch (err) {
+    return res.status(404).json({ message: (err as Error).message });
   }
 };
 
+/**
+ * GET /api/pipeline/cards/:id/documents
+ * Drawer → Documents tab
+ */
 export const getApplicationDocumentsHandler = (req: Request, res: Response) => {
   try {
-    const documents = getApplicationDocuments(req.params.id);
-    return res.json({ data: documents });
-  } catch (error) {
-    return res.status(404).json({ message: (error as Error).message });
+    const docs = getApplicationDocuments(req.params.id);
+    return res.json({ data: docs });
+  } catch (err) {
+    return res.status(404).json({ message: (err as Error).message });
   }
 };
 
+/**
+ * GET /api/pipeline/cards/:id/lenders
+ * Drawer → Lenders tab
+ */
 export const getApplicationLendersHandler = (req: Request, res: Response) => {
   try {
     const lenders = getApplicationLenders(req.params.id);
     return res.json({ data: lenders });
-  } catch (error) {
-    return res.status(404).json({ message: (error as Error).message });
+  } catch (err) {
+    return res.status(404).json({ message: (err as Error).message });
   }
 };
