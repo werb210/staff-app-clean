@@ -3,7 +3,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 
 import { attachSiloContext } from "./middleware/siloContext.js";
-import { verifyToken } from "./middleware/authMiddleware.js";
+import * as authMiddleware from "./middleware/authMiddleware.js";
 import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
 import applicationsRouter from "./routes/applications/index.js";
@@ -26,6 +26,7 @@ import notificationsRouter from "./routes/notifications.js";
 import internalHealthRouter from "./routes/internal/health.js";
 import buildGuardRouter from "./routes/internal/buildGuard.js";
 import publicLoginRouter from "./routes/api/publicLogin.js";
+import contactsRouter from "./routes/contacts.js";
 import { loadEnv } from "./utils/env.js";
 import { logError, logInfo } from "./utils/logger.js";
 
@@ -47,7 +48,7 @@ app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/publicLogin", publicLoginRouter);
 
-app.use("/api", verifyToken);
+app.use("/api", authMiddleware.verifyToken);
 app.use("/api/applications", applicationsRouter);
 app.use("/api/documents", documentsRouter);
 app.use("/api/lenders", lendersRouter);
@@ -55,6 +56,11 @@ app.use("/api/lender-products", lenderProductsRouter);
 app.use("/api/pipeline", pipelineRouter);
 app.use("/api/tasks", tasksRouter);
 app.use("/api/users", usersRouter);
+app.use(
+  "/api/contacts",
+  authMiddleware.verifyToken,
+  contactsRouter,
+);
 app.use("/api/communication/sms", smsRouter);
 app.use("/api/communication/email", emailRouter);
 app.use("/api/communication/calls", callsRouter);
