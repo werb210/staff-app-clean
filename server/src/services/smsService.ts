@@ -1,6 +1,21 @@
 import twilio, { type Twilio } from "twilio";
 import { randomUUID } from "crypto";
-import { logError, logInfo } from "../utils/logger.js";
+
+// Fallback-safe logger loader
+let safeLogInfo: (msg: string, meta?: any) => void = console.log;
+let safeLogError: (msg: string, meta?: any) => void = console.error;
+
+try {
+  const { logInfo, logError } = await import("../utils/logger.js");
+  safeLogInfo = logInfo ?? console.log;
+  safeLogError = logError ?? console.error;
+} catch {
+  // logger missing — fallback already set
+}
+
+/* -----------------------------------------------------
+   Types
+----------------------------------------------------- */
 
 export type SMSDirection = "incoming" | "outgoing";
 export type SMSDeliveryStatus = "queued" | "sent" | "failed";
@@ -10,12 +25,12 @@ export interface SMSMessageRecord {
   contactId: string;
   to: string;
   from: string;
-  direction: SMSDirection;
   message: string;
+  direction: SMSDirection;
   status: SMSDeliveryStatus;
   createdAt: string;
-  providerSid?: string;
   sentBy?: string;
+  providerSid?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -33,19 +48,25 @@ export interface SendSMSPayload {
   metadata?: Record<string, unknown>;
 }
 
+/* -----------------------------------------------------
+   Internal Storage (temporary)
+----------------------------------------------------- */
+
 const smsMessages: SMSMessageRecord[] = [];
 let smsClient: Twilio | null = null;
 
+/* -----------------------------------------------------
+   Twilio Client Initializer
+----------------------------------------------------- */
+
 const getTwilioClient = (): Twilio | null => {
-  if (smsClient) {
-    return smsClient;
-  }
+  if (smsClient) return smsClient;
 
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
 
   if (!accountSid || !authToken) {
-    logInfo("Twilio credentials missing, SMS will be queued only");
+    safeLogInfo("Twilio credentials missing — SMS will be queued only");
     return null;
   }
 
@@ -53,34 +74,52 @@ const getTwilioClient = (): Twilio | null => {
   return smsClient;
 };
 
+/* -----------------------------------------------------
+   Silo-based From Number Resolution (BF / SLF)
+----------------------------------------------------- */
+
 const resolveFromNumber = (provided?: string): string => {
-  if (provided && provided.trim().length > 0) {
-    return provided;
+  if (provided && provided.trim().length > 0) return provided;
+
+  // Enforce SILO-SPECIFIC logic
+  const silo = process.env.APP_SILO?.toUpperCase() ?? "BF";
+
+  const bfNumber = process.env.BF_SMS_NUMBER;
+  const slfNumber = process.env.SLF_SMS_NUMBER;
+
+  if (silo === "SLF") {
+    if (!slfNumber) throw new Error("SLF_SMS_NUMBER not configured");
+    return slfNumber;
   }
 
-  const configured = process.env.SMS_FROM_NUMBER;
-  if (!configured) {
-    throw new Error("SMS sender number not configured");
-  }
-
-  return configured;
+  // Default → BF silo
+  if (!bfNumber) throw new Error("BF_SMS_NUMBER not configured");
+  return bfNumber;
 };
 
-const sortByDateDesc = (a: SMSMessageRecord, b: SMSMessageRecord): number =>
+/* -----------------------------------------------------
+   Thread Helpers
+----------------------------------------------------- */
+
+const sortByDateDesc = (a: SMSMessageRecord, b: SMSMessageRecord) =>
   new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf();
+
+/* -----------------------------------------------------
+   Public: List All Threads
+----------------------------------------------------- */
 
 export const getThreads = async (): Promise<SMSThread[]> => {
   const grouped = new Map<string, SMSMessageRecord[]>();
 
   for (const message of smsMessages) {
-    const bucket = grouped.get(message.contactId) ?? [];
-    bucket.push(message);
-    grouped.set(message.contactId, bucket);
+    const group = grouped.get(message.contactId) ?? [];
+    group.push(message);
+    grouped.set(message.contactId, group);
   }
 
   return Array.from(grouped.entries())
-    .map(([contactId, messages]) => {
-      const ordered = [...messages].sort(sortByDateDesc);
+    .map(([contactId, list]) => {
+      const ordered = [...list].sort(sortByDateDesc);
       return {
         contactId,
         lastMessageAt: ordered[0]?.createdAt ?? null,
@@ -88,22 +127,23 @@ export const getThreads = async (): Promise<SMSThread[]> => {
       };
     })
     .sort((a, b) => {
-      if (!a.lastMessageAt && !b.lastMessageAt) {
-        return 0;
-      }
-      if (!a.lastMessageAt) {
-        return 1;
-      }
-      if (!b.lastMessageAt) {
-        return -1;
-      }
-      return new Date(b.lastMessageAt).valueOf() - new Date(a.lastMessageAt).valueOf();
+      if (!a.lastMessageAt && !b.lastMessageAt) return 0;
+      if (!a.lastMessageAt) return 1;
+      if (!b.lastMessageAt) return -1;
+      return (
+        new Date(b.lastMessageAt).valueOf() -
+        new Date(a.lastMessageAt).valueOf()
+      );
     });
 };
 
+/* -----------------------------------------------------
+   Public: Get Single Thread
+----------------------------------------------------- */
+
 export const getThread = async (contactId: string): Promise<SMSThread> => {
   const messages = smsMessages
-    .filter((message) => message.contactId === contactId)
+    .filter((msg) => msg.contactId === contactId)
     .sort(sortByDateDesc);
 
   return {
@@ -113,17 +153,22 @@ export const getThread = async (contactId: string): Promise<SMSThread> => {
   };
 };
 
+/* -----------------------------------------------------
+   Public: Send SMS
+----------------------------------------------------- */
+
 export const sendSMS = async (
   contactId: string,
   payload: SendSMSPayload,
 ): Promise<SMSMessageRecord> => {
   const createdAt = new Date().toISOString();
+
   const from = resolveFromNumber(payload.from);
 
   const record: SMSMessageRecord = {
     id: randomUUID(),
     contactId,
-    to: payload.to,
+    to: payload.to.trim(),
     from,
     message: payload.body,
     direction: "outgoing",
@@ -138,28 +183,83 @@ export const sendSMS = async (
   const client = getTwilioClient();
 
   if (!client) {
+    // If Twilio is not configured, mark as “sent” (queue-simulation)
     record.status = "sent";
     return record;
   }
 
-  client.messages
-    .create({
-      to: payload.to,
+  try {
+    const response = await client.messages.create({
+      to: payload.to.trim(),
       from,
       body: payload.body,
-    })
-    .then((response: { sid?: string }) => {
-      record.status = "sent";
-      record.providerSid = response.sid;
-      logInfo("SMS sent via Twilio", {
-        contactId,
-        sid: response.sid,
-      });
-    })
-    .catch((error: unknown) => {
-      record.status = "failed";
-      logError("Failed to send SMS via Twilio", error);
     });
+
+    record.status = "sent";
+    record.providerSid = response.sid;
+    safeLogInfo("SMS sent via Twilio", {
+      contactId,
+      sid: response.sid,
+    });
+  } catch (err) {
+    record.status = "failed";
+    safeLogError("Failed to send SMS via Twilio", err);
+  }
 
   return record;
 };
+
+/* -----------------------------------------------------
+   Public: Record an Inbound SMS (via Twilio Webhook)
+----------------------------------------------------- */
+
+export const recordInboundSMS = (
+  contactId: string,
+  payload: {
+    from: string;
+    to: string;
+    body: string;
+    metadata?: Record<string, unknown>;
+  },
+): SMSMessageRecord => {
+  const createdAt = new Date().toISOString();
+
+  const record: SMSMessageRecord = {
+    id: randomUUID(),
+    contactId,
+    to: payload.to.trim(),
+    from: payload.from.trim(),
+    message: payload.body,
+    direction: "incoming",
+    status: "sent",
+    createdAt,
+    metadata: payload.metadata,
+  };
+
+  smsMessages.unshift(record);
+  return record;
+};
+
+/* -----------------------------------------------------
+   Export Class Wrapper (API consumption)
+----------------------------------------------------- */
+
+export class SMSService {
+  async sendMessage(contactId: string, payload: SendSMSPayload) {
+    return sendSMS(contactId, payload);
+  }
+
+  recordInbound(contactId: string, payload: { from: string; to: string; body: string }) {
+    return recordInboundSMS(contactId, payload);
+  }
+
+  listAllThreads() {
+    return getThreads();
+  }
+
+  listThread(contactId: string) {
+    return getThread(contactId);
+  }
+}
+
+export const smsService = new SMSService();
