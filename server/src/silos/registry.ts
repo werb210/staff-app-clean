@@ -16,6 +16,7 @@ import { createTaskService } from "../services/taskService.js";
 import { createUserService } from "../services/userService.js";
 import { PasskeyAuthService } from "../auth/passkeyAuthService.js";
 import { PlaceholderAuthService } from "../auth/placeholderAuthService.js";
+import { createContactsService } from "../services/contactsService.js";
 import type { SiloContext, SiloKey } from "./types.js";
 
 const commonUsers = {
@@ -65,6 +66,56 @@ function createBFContext(): SiloContext {
       status: "pending",
     },
   ]);
+  const contacts = createContactsService([
+    {
+      id: "bf-contact-1",
+      firstName: "Ava",
+      lastName: "Moore",
+      email: "ava.moore@bf.example",
+      phone: "+15555551234",
+      companyName: "Aurora Manufacturing",
+      createdAt: "2024-05-01T10:00:00.000Z",
+      updatedAt: "2024-05-10T16:30:00.000Z",
+      timeline: [
+        {
+          id: "bf-contact-1-event-1",
+          type: "call",
+          message: "Completed onboarding call with borrower.",
+          createdAt: "2024-05-02T14:30:00.000Z",
+        },
+        {
+          id: "bf-contact-1-event-2",
+          type: "email",
+          message: "Sent checklist of required financial statements.",
+          createdAt: "2024-05-06T18:15:00.000Z",
+        },
+      ],
+    },
+    {
+      id: "bf-contact-2",
+      firstName: "Logan",
+      lastName: "Chen",
+      email: "logan.chen@bf.example",
+      phone: "+15555557654",
+      companyName: "Harbor Retail Group",
+      createdAt: "2024-04-18T09:45:00.000Z",
+      updatedAt: "2024-05-08T11:00:00.000Z",
+      timeline: [
+        {
+          id: "bf-contact-2-event-1",
+          type: "sms",
+          message: "Texted borrower about updated appraisal timeline.",
+          createdAt: "2024-04-20T15:05:00.000Z",
+        },
+        {
+          id: "bf-contact-2-event-2",
+          type: "note",
+          message: "Underwriter reviewing debt schedule attachments.",
+          createdAt: "2024-05-07T13:22:00.000Z",
+        },
+      ],
+    },
+  ]);
   const users = createUserService([
     {
       id: "bf-user-1",
@@ -103,6 +154,7 @@ function createBFContext(): SiloContext {
       retryQueue,
       tasks,
       users,
+      contacts,
       metadata: {
         silo: "BF",
         documentStatusDefault: "review",
@@ -130,6 +182,32 @@ function createSLFContext(): SiloContext {
       name: "Contact borrower",
       dueAt: new Date().toISOString(),
       status: "pending",
+    },
+  ]);
+  const contacts = createContactsService([
+    {
+      id: "slf-contact-1",
+      firstName: "Maya",
+      lastName: "Singh",
+      email: "maya.singh@slf.example",
+      phone: "+15555559876",
+      companyName: "Brightline Studios",
+      createdAt: "2024-03-11T12:20:00.000Z",
+      updatedAt: "2024-04-02T09:10:00.000Z",
+      timeline: [
+        {
+          id: "slf-contact-1-event-1",
+          type: "email",
+          message: "Shared updated financial package with underwriting team.",
+          createdAt: "2024-03-15T17:45:00.000Z",
+        },
+        {
+          id: "slf-contact-1-event-2",
+          type: "system",
+          message: "Automated credit pull completed.",
+          createdAt: "2024-03-18T08:00:00.000Z",
+        },
+      ],
     },
   ]);
   const users = createUserService([
@@ -164,6 +242,7 @@ function createSLFContext(): SiloContext {
       retryQueue,
       tasks,
       users,
+      contacts,
       metadata: {
         silo: "SLF",
         documentStatusDefault: "processing",
@@ -188,6 +267,7 @@ function createBIContext(): SiloContext {
   const retryQueue = createRetryQueueService();
   const tasks = createTaskService();
   const users = createUserService();
+  const contacts = createContactsService();
 
   return {
     silo: "BI",
@@ -206,6 +286,7 @@ function createBIContext(): SiloContext {
       retryQueue,
       tasks,
       users,
+      contacts,
       metadata: {
         silo: "BI",
         documentStatusDefault: "processing",

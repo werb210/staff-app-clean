@@ -12,6 +12,7 @@ import type { AiServiceType } from "../services/aiService.js";
 import type { OcrServiceType } from "../services/ocrService.js";
 import type { TaskService } from "../services/taskService.js";
 import type { UserService } from "../services/userService.js";
+import type { ContactsServiceType } from "../services/contactsService.js";
 
 export type SiloKey = "BF" | "SLF" | "BI";
 
@@ -51,6 +52,7 @@ export interface SiloServices {
   retryQueue: RetryQueueServiceType;
   tasks: TaskService;
   users: UserService;
+  contacts: ContactsServiceType;
   metadata: {
     silo: SiloKey;
     documentStatusDefault: DocumentStatus;
