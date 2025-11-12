@@ -2,104 +2,76 @@ import { BlobServiceClient, type ContainerClient } from "@azure/storage-blob";
 import type { Response } from "express";
 import { pipeline } from "stream/promises";
 
-export interface AzureBlobServiceType {
-  uploadFile(
-    buffer: Buffer,
-    fileName: string,
-    mimeType: string,
-  ): Promise<{ blobName: string; url: string }>;
-  downloadFile(blobName: string): Promise<Buffer>;
-  streamFile(blobName: string, res: Response): Promise<void>;
-  exists(blobName: string): Promise<boolean>;
-  deleteFile(blobName: string): Promise<void>;
-}
+let containerClientPromise: Promise<ContainerClient> | null = null;
 
-const resolveConnectionString = (): string => {
-  const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-  if (!connectionString) {
+const getConnectionString = (): string => {
+  const value = process.env.AZURE_STORAGE_CONNECTION_STRING;
+  if (!value) {
     throw new Error("AZURE_STORAGE_CONNECTION_STRING is not configured");
   }
-  return connectionString;
+  return value;
 };
 
-const resolveContainerName = (): string =>
-  process.env.AZURE_STORAGE_CONTAINER ?? "documents";
-
-class AzureBlobService implements AzureBlobServiceType {
-  private containerClientPromise: Promise<ContainerClient> | null = null;
-
-  private async getContainerClient(): Promise<ContainerClient> {
-    if (!this.containerClientPromise) {
-      const connectionString = resolveConnectionString();
-      const containerName = resolveContainerName();
-      const blobServiceClient =
-        BlobServiceClient.fromConnectionString(connectionString);
-      const containerClient = blobServiceClient.getContainerClient(containerName);
-
-      this.containerClientPromise = (async () => {
-        await containerClient.createIfNotExists();
-        return containerClient;
-      })();
-    }
-
-    return this.containerClientPromise;
+const getContainerName = (): string => {
+  const value = process.env.AZURE_STORAGE_CONTAINER;
+  if (!value) {
+    throw new Error("AZURE_STORAGE_CONTAINER is not configured");
   }
+  return value;
+};
 
-  public async uploadFile(
-    buffer: Buffer,
-    fileName: string,
-    mimeType: string,
-  ): Promise<{ blobName: string; url: string }> {
-    const containerClient = await this.getContainerClient();
-    const blobClient = containerClient.getBlockBlobClient(fileName);
-    await blobClient.uploadData(buffer, {
-      blobHTTPHeaders: { blobContentType: mimeType },
-    });
-    return { blobName: fileName, url: blobClient.url };
+const getContainerClient = async (): Promise<ContainerClient> => {
+  if (!containerClientPromise) {
+    const client = BlobServiceClient.fromConnectionString(getConnectionString());
+    const container = client.getContainerClient(getContainerName());
+    containerClientPromise = (async () => {
+      await container.createIfNotExists();
+      return container;
+    })();
   }
+  return containerClientPromise;
+};
 
-  public async downloadFile(blobName: string): Promise<Buffer> {
-    const containerClient = await this.getContainerClient();
-    const blobClient = containerClient.getBlockBlobClient(blobName);
-    const download = await blobClient.download();
-    const chunks: Buffer[] = [];
-    const stream = download.readableStreamBody;
-    if (!stream) {
-      return Buffer.alloc(0);
-    }
-    for await (const chunk of stream) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    }
-    return Buffer.concat(chunks);
+export const uploadBuffer = async (
+  buffer: Buffer,
+  blobName: string,
+  mimeType?: string,
+): Promise<void> => {
+  const container = await getContainerClient();
+  const blobClient = container.getBlockBlobClient(blobName);
+  await blobClient.uploadData(buffer, {
+    blobHTTPHeaders: mimeType ? { blobContentType: mimeType } : undefined,
+  });
+};
+
+export const downloadBuffer = async (blobName: string): Promise<Buffer> => {
+  const container = await getContainerClient();
+  const blobClient = container.getBlockBlobClient(blobName);
+  const download = await blobClient.download();
+  const stream = download.readableStreamBody;
+  if (!stream) {
+    return Buffer.alloc(0);
   }
-
-  public async streamFile(blobName: string, res: Response): Promise<void> {
-    const containerClient = await this.getContainerClient();
-    const blobClient = containerClient.getBlockBlobClient(blobName);
-    const download = await blobClient.download();
-    const stream = download.readableStreamBody;
-    if (!stream) {
-      throw new Error(`Unable to stream blob ${blobName}`);
-    }
-    await pipeline(stream, res);
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
+  return Buffer.concat(chunks);
+};
 
-  public async exists(blobName: string): Promise<boolean> {
-    const containerClient = await this.getContainerClient();
-    const blobClient = containerClient.getBlockBlobClient(blobName);
-    return blobClient.exists();
+export const streamBlob = async (blobName: string, res: Response): Promise<void> => {
+  const container = await getContainerClient();
+  const blobClient = container.getBlockBlobClient(blobName);
+  const download = await blobClient.download();
+  const stream = download.readableStreamBody;
+  if (!stream) {
+    throw new Error(`Unable to stream blob ${blobName}`);
   }
+  await pipeline(stream, res);
+};
 
-  public async deleteFile(blobName: string): Promise<void> {
-    const containerClient = await this.getContainerClient();
-    const blobClient = containerClient.getBlockBlobClient(blobName);
-    await blobClient.deleteIfExists();
-  }
-}
-
-export const azureBlobService = new AzureBlobService();
-
-export const createAzureBlobService = (): AzureBlobService =>
-  new AzureBlobService();
-
-export type { AzureBlobService as AzureBlobServiceImpl };
+export const blobExists = async (blobName: string): Promise<boolean> => {
+  const container = await getContainerClient();
+  const blobClient = container.getBlockBlobClient(blobName);
+  return blobClient.exists();
+};

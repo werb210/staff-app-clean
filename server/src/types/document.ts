@@ -2,5 +2,6 @@ export type {
   DocumentMetadata,
   DocumentStatus,
   DocumentStatusResponse,
-  DocumentSaveInput,
+  Document,
+  DocumentWithVersions,
 } from "../schemas/document.schema.js";

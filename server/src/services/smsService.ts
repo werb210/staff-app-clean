@@ -148,7 +148,7 @@ export const sendSMS = async (
       from,
       body: payload.body,
     })
-    .then((response) => {
+    .then((response: { sid?: string }) => {
       record.status = "sent";
       record.providerSid = response.sid;
       logInfo("SMS sent via Twilio", {

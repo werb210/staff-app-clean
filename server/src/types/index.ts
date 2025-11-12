@@ -6,11 +6,11 @@ import {
   ApplicationPublicSchema,
 } from "../schemas/application.schema.js";
 import {
-  DocumentMetadataSchema,
-  DocumentUploadSchema,
+  DocumentSchema,
   DocumentStatusSchema,
-  DocumentStatusResponseSchema,
+  DocumentWithVersionsSchema,
 } from "../schemas/document.schema.js";
+import { DocumentVersionSchema } from "../schemas/documentVersion.schema.js";
 import {
   LenderSchema,
   LenderProductSchema,
@@ -31,10 +31,10 @@ export type ApplicationCreate = z.infer<typeof ApplicationCreateSchema>;
 export type ApplicationStatus = z.infer<typeof ApplicationStatusSchema>;
 export type ApplicationPublic = z.infer<typeof ApplicationPublicSchema>;
 
-export type DocumentMetadata = z.infer<typeof DocumentMetadataSchema>;
-export type DocumentUpload = z.infer<typeof DocumentUploadSchema>;
 export type DocumentStatus = z.infer<typeof DocumentStatusSchema>;
-export type DocumentStatusResponse = z.infer<typeof DocumentStatusResponseSchema>;
+export type Document = z.infer<typeof DocumentSchema>;
+export type DocumentWithVersions = z.infer<typeof DocumentWithVersionsSchema>;
+export type DocumentVersion = z.infer<typeof DocumentVersionSchema>;
 
 export type Lender = z.infer<typeof LenderSchema>;
 export type LenderProduct = z.infer<typeof LenderProductSchema>;
