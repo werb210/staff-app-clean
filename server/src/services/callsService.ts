@@ -152,7 +152,7 @@ export const initiateCall = async (
         twiml:
           "<Response><Say voice=\"alice\">You have an outbound call from Staff Communications Center.</Say></Response>",
       })
-      .then((response) => {
+      .then((response: { sid?: string; status?: string }) => {
         call.providerSid = response.sid;
         call.status = (response.status as CallStatus) ?? "ringing";
         call.updatedAt = new Date().toISOString();

@@ -7,7 +7,9 @@ import * as authMiddleware from "./middleware/authMiddleware.js";
 import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
 import applicationsRouter from "./routes/applications/index.js";
-import documentsRouter from "./routes/documents.js";
+import documentsRouter, {
+  applicationDocumentsRouter,
+} from "./routes/documents.js";
 import lendersRouter from "./routes/lenders.js";
 import lenderProductsRouter from "./routes/lenderProducts.js";
 import pipelineRouter from "./routes/pipeline.js";
@@ -48,8 +50,13 @@ app.use("/api/publicLogin", publicLoginRouter);
 
 app.use("/api", authMiddleware.verifyToken);
 app.use("/api/applications", applicationsRouter);
-app.use("/api/documents", documentsRouter);
-app.use("/api/lenders", lendersRouter);
+app.use(
+  "/api/applications",
+  authMiddleware.verifyToken,
+  applicationDocumentsRouter,
+);
+app.use("/api/documents", authMiddleware.verifyToken, documentsRouter);
+app.use("/api/lenders", authMiddleware.verifyToken, lendersRouter);
 app.use("/api/lender-products", lenderProductsRouter);
 app.use("/api/pipeline", pipelineRouter);
 app.use("/api/tasks", tasksRouter);
