@@ -1,6 +1,23 @@
 import twilio, { type Twilio } from "twilio";
 import { randomUUID } from "crypto";
-import { logError, logInfo } from "../utils/logger.js";
+
+/* -----------------------------------------------------
+   Safe Logger Loader
+----------------------------------------------------- */
+let safeLogInfo: (msg: string, meta?: any) => void = console.log;
+let safeLogError: (msg: string, meta?: any) => void = console.error;
+
+try {
+  const { logInfo, logError } = await import("../utils/logger.js");
+  safeLogInfo = logInfo ?? console.log;
+  safeLogError = logError ?? console.error;
+} catch {
+  // logger missing — defaults already set
+}
+
+/* -----------------------------------------------------
+   Types
+----------------------------------------------------- */
 
 export type CallDirection = "incoming" | "outgoing";
 export type CallStatus =
@@ -46,45 +63,64 @@ export interface InitiateCallOptions {
   context?: string;
 }
 
+/* -----------------------------------------------------
+   In-Memory Storage (temporary)
+----------------------------------------------------- */
+
 const calls: CallRecord[] = [];
 const callEvents: CallTimelineEvent[] = [];
 let voiceClient: Twilio | null = null;
 
+/* -----------------------------------------------------
+   Twilio Voice Client
+----------------------------------------------------- */
+
 const getVoiceClient = (): Twilio | null => {
-  if (voiceClient) {
-    return voiceClient;
-  }
+  if (voiceClient) return voiceClient;
 
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
 
-  if (!accountSid || !authToken) {
-    logInfo("Twilio credentials missing, calls will not be placed");
+  if (!sid || !token) {
+    safeLogInfo("Twilio Voice not configured — calls will not be made");
     return null;
   }
 
-  voiceClient = twilio(accountSid, authToken);
+  voiceClient = twilio(sid, token);
   return voiceClient;
 };
 
-const resolveCallerId = (provided?: string): string => {
-  if (provided && provided.trim().length > 0) {
-    return provided;
+/* -----------------------------------------------------
+   BF / SLF Silo Caller ID Logic
+----------------------------------------------------- */
+
+const resolveCallerId = (override?: string): string => {
+  if (override && override.trim()) return override;
+
+  const silo = process.env.APP_SILO?.toUpperCase() ?? "BF";
+
+  const bfVoice = process.env.BF_VOICE_NUMBER;
+  const slfVoice = process.env.SLF_VOICE_NUMBER;
+
+  if (silo === "SLF") {
+    if (!slfVoice) throw new Error("SLF_VOICE_NUMBER missing");
+    return slfVoice;
   }
 
-  const configured = process.env.SMS_FROM_NUMBER;
-  if (!configured) {
-    throw new Error("Caller ID not configured");
-  }
-
-  return configured;
+  // Default BF
+  if (!bfVoice) throw new Error("BF_VOICE_NUMBER missing");
+  return bfVoice;
 };
 
-const recordTimelineEvent = (
+/* -----------------------------------------------------
+   Timeline Utility
+----------------------------------------------------- */
+
+const pushTimeline = (
   callId: string,
   contactId: string,
   event: CallTimelineEvent["event"],
-  description: string,
+  description: string
 ): void => {
   callEvents.push({
     id: randomUUID(),
@@ -96,117 +132,159 @@ const recordTimelineEvent = (
   });
 };
 
+/* -----------------------------------------------------
+   Errors
+----------------------------------------------------- */
+
 export class CallNotFoundError extends Error {
   constructor(id: string) {
-    super(`Call ${id} not found`);
+    super(`Call not found: ${id}`);
     this.name = "CallNotFoundError";
   }
 }
 
-export const getCalls = async (): Promise<CallRecord[]> =>
-  [...calls]
+/* -----------------------------------------------------
+   Public: List All Calls
+----------------------------------------------------- */
+
+export const getCalls = async (): Promise<CallRecord[]> => {
+  return calls
+    .slice()
     .sort(
-      (a, b) => new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf(),
+      (a, b) => new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf()
     )
     .map((call) => ({
       ...call,
       timeline: callEvents
-        .filter((event) => event.callId === call.id)
+        .filter((e) => e.callId === call.id)
         .sort(
           (a, b) =>
-            new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf(),
+            new Date(a.createdAt).valueOf() -
+            new Date(b.createdAt).valueOf()
         ),
     }));
+};
+
+/* -----------------------------------------------------
+   Public: Initiate a Call
+----------------------------------------------------- */
 
 export const initiateCall = async (
   contactId: string,
-  options: InitiateCallOptions,
+  options: InitiateCallOptions
 ): Promise<CallRecord> => {
-  const createdAt = new Date().toISOString();
+  const now = new Date().toISOString();
   const callerId = resolveCallerId(options.from);
 
-  const call: CallRecord = {
+  const record: CallRecord = {
     id: randomUUID(),
     contactId,
-    to: options.to,
+    to: options.to.trim(),
     from: callerId,
     direction: "outgoing",
     status: "initiated",
     duration: 0,
-    createdAt,
-    updatedAt: createdAt,
+    createdAt: now,
+    updatedAt: now,
     initiatedBy: options.initiatedBy,
     context: options.context,
     timeline: [],
   };
 
-  calls.unshift(call);
-  recordTimelineEvent(call.id, contactId, "initiated", "Call initiated");
+  calls.unshift(record);
+  pushTimeline(record.id, contactId, "initiated", "Call created locally");
 
   const client = getVoiceClient();
-  if (client) {
-    client.calls
-      .create({
-        to: options.to,
-        from: callerId,
-        twiml:
-          "<Response><Say voice=\"alice\">You have an outbound call from Staff Communications Center.</Say></Response>",
-      })
-      .then((response: { sid?: string; status?: string }) => {
-        call.providerSid = response.sid;
-        call.status = (response.status as CallStatus) ?? "ringing";
-        call.updatedAt = new Date().toISOString();
-        recordTimelineEvent(call.id, contactId, "ringing", "Twilio reported ringing state");
-        logInfo("Call initiated via Twilio", {
-          callId: call.id,
-          sid: response.sid,
-        });
-      })
-      .catch((error: unknown) => {
-        call.status = "failed";
-        call.updatedAt = new Date().toISOString();
-        recordTimelineEvent(call.id, contactId, "failed", "Call failed to initiate");
-        logError("Failed to initiate call via Twilio", error);
-      });
+
+  if (!client) {
+    // No Twilio configured — return queued state
+    record.status = "queued";
+    record.updatedAt = new Date().toISOString();
+    return {
+      ...record,
+      timeline: callEvents.filter((e) => e.callId === record.id),
+    };
+  }
+
+  try {
+    const twilioCall = await client.calls.create({
+      to: record.to,
+      from: callerId,
+      statusCallback: `${process.env.PUBLIC_API_URL}/api/voice/status`,
+      statusCallbackEvent: [
+        "initiated",
+        "ringing",
+        "answered",
+        "completed",
+        "busy",
+        "no-answer",
+        "failed",
+      ],
+      statusCallbackMethod: "POST",
+      twiml:
+        "<Response><Say voice=\"alice\">Connecting your call from Boreal Financial Communications.</Say></Response>",
+    });
+
+    record.providerSid = twilioCall.sid;
+    record.status = (twilioCall.status as CallStatus) ?? "ringing";
+    record.updatedAt = new Date().toISOString();
+    pushTimeline(record.id, contactId, "ringing", "Twilio reported ringing");
+
+    safeLogInfo("Outbound call initiated (Twilio)", {
+      sid: twilioCall.sid,
+      contactId,
+    });
+  } catch (err) {
+    record.status = "failed";
+    record.updatedAt = new Date().toISOString();
+    pushTimeline(record.id, contactId, "failed", "Twilio call failed");
+    safeLogError("Failed to initiate Twilio call", err);
   }
 
   return {
-    ...call,
+    ...record,
     timeline: callEvents
-      .filter((event) => event.callId === call.id)
+      .filter((e) => e.callId === record.id)
       .sort(
-        (a, b) => new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf(),
+        (a, b) =>
+          new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
       ),
   };
 };
 
+/* -----------------------------------------------------
+   Public: End a Call
+----------------------------------------------------- */
+
 export const endCall = async (callId: string): Promise<CallRecord> => {
-  const call = calls.find((candidate) => candidate.id === callId);
-  if (!call) {
-    throw new CallNotFoundError(callId);
-  }
+  const record = calls.find((c) => c.id === callId);
+  if (!record) throw new CallNotFoundError(callId);
 
   const now = new Date();
-  const startedAt = new Date(call.createdAt);
-  call.duration = Math.max(0, Math.round((now.valueOf() - startedAt.valueOf()) / 1000));
-  call.status = "completed";
-  call.updatedAt = now.toISOString();
+  const startAt = new Date(record.createdAt);
+  record.duration = Math.max(
+    0,
+    Math.round((now.valueOf() - startAt.valueOf()) / 1000)
+  );
+  record.status = "completed";
+  record.updatedAt = now.toISOString();
+  pushTimeline(record.id, record.contactId, "completed", "Call completed");
 
-  recordTimelineEvent(call.id, call.contactId, "completed", "Call completed");
-
-  if (call.providerSid) {
+  if (record.providerSid) {
     const client = getVoiceClient();
-    client?.calls(call.providerSid)
+    client
+      ?.calls(record.providerSid)
       .update({ status: "completed" })
-      .catch((error: unknown) => {
-        logError("Failed to end Twilio call", error);
-      });
+      .catch((err) => safeLogError("Twilio endCall update failed", err));
   }
 
   return {
-    ...call,
+    ...record,
     timeline: callEvents
-      .filter((event) => event.callId === call.id)
-      .sort((a, b) => new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()),
+      .filter((e) => e.callId === record.id)
+      .sort(
+        (a, b) =>
+          new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
+      ),
   };
 };
