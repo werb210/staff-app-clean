@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+/**
+ * A single historical version of an uploaded document.
+ * Matches documentService.buildVersion() exactly.
+ */
 export const DocumentVersionSchema = z.object({
   id: z.string().uuid(),
   documentId: z.string().uuid(),
