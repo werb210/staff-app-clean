@@ -13,9 +13,7 @@ import lenderProductsRouter from "./routes/lenderProducts.js";
 import pipelineRouter from "./routes/pipeline.js";
 import tasksRouter from "./routes/tasks.js";
 import usersRouter from "./routes/users.js";
-import smsRouter from "./routes/communication/sms.js";
-import emailRouter from "./routes/communication/email.js";
-import callsRouter from "./routes/communication/calls.js";
+import communicationRouter from "./routes/communication.js";
 import marketingAdsRouter from "./routes/marketing/ads.js";
 import marketingAutomationRouter from "./routes/marketing/automation.js";
 import retryQueueRouter from "./routes/admin/retryQueue.js";
@@ -61,9 +59,11 @@ app.use(
   authMiddleware.verifyToken,
   contactsRouter,
 );
-app.use("/api/communication/sms", smsRouter);
-app.use("/api/communication/email", emailRouter);
-app.use("/api/communication/calls", callsRouter);
+app.use(
+  "/api/communication",
+  authMiddleware.verifyToken,
+  communicationRouter,
+);
 app.use("/api/marketing/ads", marketingAdsRouter);
 app.use("/api/marketing/automation", marketingAutomationRouter);
 app.use("/api/admin/retry-queue", retryQueueRouter);

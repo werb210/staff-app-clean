@@ -14,6 +14,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
     "axios": "^1.13.2",
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
@@ -22,6 +23,7 @@
     "next": "^14.2.13",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "twilio": "^5.10.5",
     "zod": "^4.1.12"
   },
   "devDependencies": {
