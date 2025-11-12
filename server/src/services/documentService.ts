@@ -1,125 +1,119 @@
 import { createHash, randomUUID } from "crypto";
 import JSZip from "jszip";
 import type { Response } from "express";
+
 import {
   type Document,
   type DocumentStatus,
   type DocumentUploadMetadata,
   type DocumentWithVersions,
   DocumentSchema,
-  DocumentStatusSchema,
   DocumentUploadMetadataSchema,
   DocumentWithVersionsSchema,
+  DocumentStatusSchema,
 } from "../schemas/document.schema.js";
+
 import {
   type DocumentVersion,
   DocumentVersionSchema,
 } from "../schemas/documentVersion.schema.js";
-import { downloadBuffer, streamBlob, uploadBuffer } from "./azureBlob.js";
 
-interface SaveDocumentVersionInput {
-  documentId: string;
-  buffer: Buffer;
-  mimeType: string;
-  fileName: string;
-  category?: string;
-}
+import {
+  uploadBuffer,
+  downloadBuffer,
+  streamBlob,
+} from "./azureBlob.js";
 
+/* ------------------------------------------------------------------------
+   In-memory store (temporary until DB integration)
+------------------------------------------------------------------------ */
 const documents = new Map<string, DocumentWithVersions>();
 
-const computeChecksum = (buffer: Buffer): string =>
+/* ------------------------------------------------------------------------
+   Helpers
+------------------------------------------------------------------------ */
+
+const now = (): string => new Date().toISOString();
+
+const sanitizeName = (name: string): string =>
+  name.trim().replace(/[^a-zA-Z0-9._-]/g, "-") || "document";
+
+const sha256 = (buffer: Buffer): string =>
   createHash("sha256").update(buffer).digest("hex");
 
-const sanitizeFileName = (name: string): string => {
-  const trimmed = name.trim();
-  if (!trimmed) {
-    return "document";
-  }
-  return trimmed.replace(/[^a-zA-Z0-9._-]/g, "-");
-};
+const blobPath = (docId: string, version: number, fileName: string): string =>
+  `${docId}/v${version}/${sanitizeName(fileName)}`;
 
-const getNow = (): string => new Date().toISOString();
-
-const createBlobName = (documentId: string, version: number, fileName: string): string => {
-  const sanitized = sanitizeFileName(fileName);
-  return `${documentId}/v${version}/${sanitized}`;
-};
-
-const toDocument = (record: DocumentWithVersions): Document => ({
-  id: record.id,
-  applicationId: record.applicationId,
-  name: record.name,
-  fileName: record.fileName,
-  category: record.category,
-  mimeType: record.mimeType,
-  blobName: record.blobName,
-  fileSize: record.fileSize,
-  checksum: record.checksum,
-  version: record.version,
-  status: record.status,
-  createdAt: record.createdAt,
-  updatedAt: record.updatedAt,
-  ocrTextPreview: record.ocrTextPreview,
-});
-
-const requireDocument = (id: string): DocumentWithVersions => {
+const requireDoc = (id: string): DocumentWithVersions => {
   const record = documents.get(id);
-  if (!record) {
-    throw new Error(`Document ${id} not found`);
-  }
+  if (!record) throw new Error(`Document ${id} not found`);
   return record;
 };
 
-const persistDocument = (record: DocumentWithVersions) => {
-  const parsed = DocumentWithVersionsSchema.parse(record);
-  documents.set(parsed.id, parsed);
-  return parsed;
+const storeDoc = (record: DocumentWithVersions): DocumentWithVersions => {
+  const validated = DocumentWithVersionsSchema.parse(record);
+  documents.set(validated.id, validated);
+  return validated;
 };
 
-const buildVersion = (
-  params: Omit<DocumentVersion, "id" | "createdAt"> & { createdAt?: string },
-): DocumentVersion => {
-  const version: DocumentVersion = {
+const buildVersion = (p: {
+  documentId: string;
+  blobName: string;
+  mimeType: string;
+  fileSize: number;
+  checksum: string;
+  version: number;
+  createdAt?: string;
+}): DocumentVersion => {
+  const v: DocumentVersion = {
     id: randomUUID(),
-    documentId: params.documentId,
-    blobName: params.blobName,
-    mimeType: params.mimeType,
-    fileSize: params.fileSize,
-    checksum: params.checksum,
-    version: params.version,
-    createdAt: params.createdAt ?? getNow(),
+    documentId: p.documentId,
+    blobName: p.blobName,
+    mimeType: p.mimeType,
+    fileSize: p.fileSize,
+    checksum: p.checksum,
+    version: p.version,
+    createdAt: p.createdAt ?? now(),
   };
-  return DocumentVersionSchema.parse(version);
+  return DocumentVersionSchema.parse(v);
 };
+
+/* ------------------------------------------------------------------------
+   CREATE NEW DOCUMENT
+------------------------------------------------------------------------ */
 
 export const saveNewDocument = async (
-  metadata: DocumentUploadMetadata,
+  meta: DocumentUploadMetadata,
   buffer: Buffer,
   mimeType: string,
-  originalName?: string,
+  originalName?: string
 ): Promise<DocumentWithVersions> => {
-  const parsedMetadata = DocumentUploadMetadataSchema.parse(metadata);
-  const now = getNow();
+  const m = DocumentUploadMetadataSchema.parse(meta);
+  const created = now();
   const id = randomUUID();
-  const versionNumber = 1;
-  const fileName = sanitizeFileName(originalName ?? parsedMetadata.name);
-  const blobName = createBlobName(id, versionNumber, fileName);
+
+  const version = 1;
+  const fileName = sanitizeName(originalName ?? m.name);
+  const blobName = blobPath(id, version, fileName);
+
   await uploadBuffer(buffer, blobName, mimeType);
-  const checksum = computeChecksum(buffer);
+
+  const checksum = sha256(buffer);
+
   const base: DocumentWithVersions = {
     id,
-    applicationId: parsedMetadata.applicationId,
-    name: parsedMetadata.name,
+    applicationId: m.applicationId,
+    name: m.name,
     fileName,
-    category: parsedMetadata.category,
+    category: m.category,
     mimeType,
     blobName,
     fileSize: buffer.length,
     checksum,
-    version: versionNumber,
+    version,
     status: "pending",
-    createdAt: now,
-    updatedAt: now,
+    createdAt: created,
+    updatedAt: created,
     ocrTextPreview: undefined,
     versions: [
       buildVersion({
@@ -128,160 +122,197 @@ export const saveNewDocument = async (
         mimeType,
         fileSize: buffer.length,
         checksum,
-        version: versionNumber,
-        createdAt: now,
+        version,
+        createdAt: created,
       }),
     ],
   };
-  return persistDocument(base);
+
+  return storeDoc(base);
 };
+
+/* ------------------------------------------------------------------------
+   FETCH BY ID
+------------------------------------------------------------------------ */
 
 export const getDocumentById = (id: string): DocumentWithVersions => {
-  const document = requireDocument(id);
-  return DocumentWithVersionsSchema.parse({ ...document });
+  return DocumentWithVersionsSchema.parse(requireDoc(id));
 };
 
-export const saveDocumentVersion = async (
-  params: SaveDocumentVersionInput,
-): Promise<DocumentWithVersions> => {
-  const document = requireDocument(params.documentId);
-  const versionNumber = document.version + 1;
-  const now = getNow();
-  const fileName = sanitizeFileName(params.fileName || document.name);
-  const blobName = createBlobName(document.id, versionNumber, fileName);
-  await uploadBuffer(params.buffer, blobName, params.mimeType);
-  const checksum = computeChecksum(params.buffer);
-  const version = buildVersion({
-    documentId: document.id,
+/* ------------------------------------------------------------------------
+   SAVE NEW VERSION
+------------------------------------------------------------------------ */
+
+export const saveDocumentVersion = async (p: {
+  documentId: string;
+  buffer: Buffer;
+  mimeType: string;
+  fileName?: string;
+  category?: string;
+}): Promise<DocumentWithVersions> => {
+  const record = requireDoc(p.documentId);
+
+  const version = record.version + 1;
+  const updated = now();
+  const fileName = sanitizeName(p.fileName ?? record.fileName);
+
+  const blobName = blobPath(record.id, version, fileName);
+
+  await uploadBuffer(p.buffer, blobName, p.mimeType);
+
+  const checksum = sha256(p.buffer);
+
+  const versionObj = buildVersion({
+    documentId: record.id,
     blobName,
-    mimeType: params.mimeType,
-    fileSize: params.buffer.length,
+    mimeType: p.mimeType,
+    fileSize: p.buffer.length,
     checksum,
-    version: versionNumber,
-    createdAt: now,
+    version,
+    createdAt: updated,
   });
-  const updated: DocumentWithVersions = {
-    ...document,
+
+  const merged: DocumentWithVersions = {
+    ...record,
     name: fileName,
     fileName,
-    category: params.category ?? document.category,
-    mimeType: params.mimeType,
+    category: p.category ?? record.category,
+    mimeType: p.mimeType,
     blobName,
-    fileSize: params.buffer.length,
+    fileSize: p.buffer.length,
     checksum,
-    version: versionNumber,
+    version,
     status: "pending",
-    updatedAt: now,
-    ocrTextPreview: document.ocrTextPreview,
-    versions: [...document.versions, version],
+    updatedAt: updated,
+    versions: [...record.versions, versionObj],
+    ocrTextPreview: record.ocrTextPreview,
   };
-  return persistDocument(updated);
+
+  return storeDoc(merged);
 };
 
+/* ------------------------------------------------------------------------
+   ACCEPT / REJECT
+------------------------------------------------------------------------ */
+
 export const acceptDocument = (id: string): DocumentWithVersions => {
-  const document = requireDocument(id);
-  const updated: DocumentWithVersions = {
-    ...document,
-    status: "accepted",
-    updatedAt: getNow(),
-  };
-  return persistDocument(updated);
+  const doc = requireDoc(id);
+  doc.status = "accepted";
+  doc.updatedAt = now();
+  return storeDoc(doc);
 };
 
 export const rejectDocument = (id: string): DocumentWithVersions => {
-  const document = requireDocument(id);
-  const updated: DocumentWithVersions = {
-    ...document,
-    status: "rejected",
-    updatedAt: getNow(),
-  };
-  return persistDocument(updated);
+  const doc = requireDoc(id);
+  doc.status = "rejected";
+  doc.updatedAt = now();
+  return storeDoc(doc);
 };
+
+/* ------------------------------------------------------------------------
+   REUPLOAD WRAPPER
+------------------------------------------------------------------------ */
 
 export const reuploadDocument = async (
   id: string,
   buffer: Buffer,
   mimeType: string,
   fileName: string,
-  category?: string,
-): Promise<DocumentWithVersions> =>
-  saveDocumentVersion({
+  category?: string
+): Promise<DocumentWithVersions> => {
+  return saveDocumentVersion({
     documentId: id,
     buffer,
     mimeType,
     fileName,
     category,
   });
+};
 
-export const getDocumentsForApplication = (appId: string): Document[] => {
-  const result: Document[] = [];
-  for (const record of documents.values()) {
-    if (record.applicationId === appId) {
-      result.push(DocumentSchema.parse(toDocument(record)));
+/* ------------------------------------------------------------------------
+   LIST DOCUMENTS FOR APPLICATION
+------------------------------------------------------------------------ */
+
+export const getDocumentsForApplication = (
+  applicationId: string
+): Document[] => {
+  const output: Document[] = [];
+  for (const doc of documents.values()) {
+    if (doc.applicationId === applicationId) {
+      output.push(DocumentSchema.parse({ ...doc }));
     }
   }
-  return result;
+  return output;
 };
+
+/* ------------------------------------------------------------------------
+   DOWNLOAD SINGLE DOCUMENT
+------------------------------------------------------------------------ */
 
 export const downloadDocument = async (
-  id: string,
+  id: string
 ): Promise<{ buffer: Buffer; document: DocumentWithVersions } | null> => {
-  const document = documents.get(id);
-  if (!document) {
-    return null;
-  }
-  const buffer = await downloadBuffer(document.blobName);
-  return { buffer, document };
+  const doc = documents.get(id);
+  if (!doc) return null;
+
+  const buffer = await downloadBuffer(doc.blobName);
+  return { buffer, document: doc };
 };
 
-export const downloadMultipleDocuments = async (
-  ids: string[],
-): Promise<Buffer> => {
+/* ------------------------------------------------------------------------
+   DOWNLOAD MULTIPLE AS ZIP
+------------------------------------------------------------------------ */
+
+export const downloadMultipleDocuments = async (ids: string[]): Promise<Buffer> => {
   const zip = new JSZip();
+
   await Promise.all(
     ids.map(async (id) => {
-      const document = documents.get(id);
-      if (!document) {
-        return;
-      }
-      const buffer = await downloadBuffer(document.blobName);
-      const entryName = `${document.name.replace(/\s+/g, "-")}-v${document.version}`;
-      zip.file(entryName, buffer);
-    }),
+      const doc = documents.get(id);
+      if (!doc) return;
+
+      const buffer = await downloadBuffer(doc.blobName);
+
+      const name = `${sanitizeName(doc.name)}-v${doc.version}`;
+      zip.file(name, buffer);
+    })
   );
+
   return zip.generateAsync({ type: "nodebuffer" });
 };
 
+/* ------------------------------------------------------------------------
+   STREAM DOCUMENT (for previews)
+------------------------------------------------------------------------ */
+
 export const streamDocument = async (id: string, res: Response): Promise<void> => {
-  const document = requireDocument(id);
-  await streamBlob(document.blobName, res);
+  const doc = requireDoc(id);
+  await streamBlob(doc.blobName, res);
 };
 
-// Compatibility exports for legacy consumers relying on the service class API.
-// These wrappers delegate to the new in-memory stores above so existing silo
-// tooling continues to function during the migration to the dedicated API layer.
+/* ------------------------------------------------------------------------
+   Legacy-Compatible DocumentService API
+------------------------------------------------------------------------ */
 
 export class DocumentService {
-  public listDocuments(applicationId?: string): DocumentWithVersions[] {
-    if (!applicationId) {
-      return Array.from(documents.values());
-    }
+  listDocuments(applicationId?: string): DocumentWithVersions[] {
+    if (!applicationId) return Array.from(documents.values());
     return Array.from(documents.values()).filter(
-      (doc) => doc.applicationId === applicationId,
+      (d) => d.applicationId === applicationId
     );
   }
 
-  public getDocument(id: string): DocumentWithVersions {
+  getDocument(id: string): DocumentWithVersions {
     return getDocumentById(id);
   }
 
-  public async uploadDocument(input: {
+  async uploadDocument(input: {
     applicationId: string;
     documentId?: string;
     fileName: string;
     contentType: string;
     data: Buffer;
-  }): Promise<DocumentWithVersions> {
+  }) {
     if (input.documentId) {
       return saveDocumentVersion({
         documentId: input.documentId,
@@ -290,6 +321,7 @@ export class DocumentService {
         fileName: input.fileName,
       });
     }
+
     return saveNewDocument(
       {
         applicationId: input.applicationId,
@@ -298,91 +330,36 @@ export class DocumentService {
       },
       input.data,
       input.contentType,
-      input.fileName,
+      input.fileName
     );
   }
 
-  public updateStatus(id: string, status: DocumentStatus): DocumentWithVersions {
+  updateStatus(id: string, status: DocumentStatus) {
     DocumentStatusSchema.parse(status);
-    if (status === "accepted") {
-      return acceptDocument(id);
-    }
-    if (status === "rejected") {
-      return rejectDocument(id);
-    }
-    const document = requireDocument(id);
-    const updated: DocumentWithVersions = {
-      ...document,
-      status,
-      updatedAt: getNow(),
-    };
-    return persistDocument(updated);
+    if (status === "accepted") return acceptDocument(id);
+    if (status === "rejected") return rejectDocument(id);
+
+    const doc = requireDoc(id);
+    doc.status = status;
+    doc.updatedAt = now();
+    return storeDoc(doc);
   }
 
-  public listVersions(id: string): DocumentVersion[] {
-    return [...requireDocument(id).versions];
+  listVersions(id: string): DocumentVersion[] {
+    return [...requireDoc(id).versions];
   }
 
-  public async streamVersion(id: string, res: Response): Promise<void> {
+  async streamVersion(id: string, res: Response) {
     await streamDocument(id, res);
   }
 
-  public async downloadDocument(id: string): Promise<{ buffer: Buffer }> {
+  async downloadDocument(id: string) {
     const result = await downloadDocument(id);
-    if (!result) {
-      throw new Error("Document not found");
-    }
+    if (!result) throw new Error("Document not found");
     return { buffer: result.buffer };
-  }
-
-  public saveDocument(input: {
-    id?: string;
-    applicationId: string;
-    fileName: string;
-    contentType: string;
-    status?: DocumentStatus;
-    uploadedBy?: string;
-    note?: string;
-  }): DocumentWithVersions {
-    const id = input.id ?? randomUUID();
-    const version = 1;
-    const now = getNow();
-    const fileName = sanitizeFileName(input.fileName);
-    const blobName = createBlobName(id, version, fileName);
-    const checksum = computeChecksum(Buffer.alloc(0));
-    const versionEntry = buildVersion({
-      documentId: id,
-      blobName,
-      mimeType: input.contentType,
-      fileSize: 0,
-      checksum,
-      version,
-      createdAt: now,
-    });
-    const record: DocumentWithVersions = {
-      id,
-      applicationId: input.applicationId,
-      name: input.fileName,
-      fileName,
-      category: "general",
-      mimeType: input.contentType,
-      blobName,
-      fileSize: 0,
-      checksum,
-      version,
-      status: input.status ?? "pending",
-      createdAt: now,
-      updatedAt: now,
-      ocrTextPreview: undefined,
-      versions: [versionEntry],
-    };
-    return persistDocument(record);
   }
 }
 
-export const createDocumentService = (_options: unknown = {}): DocumentService =>
-  new DocumentService();
-
-export type DocumentServiceType = DocumentService;
-
 export const documentService = new DocumentService();
+export const createDocumentService = () => new DocumentService();
+export type DocumentServiceType = DocumentService;
