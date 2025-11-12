@@ -1,0 +1,35 @@
+import { Router } from "express";
+import {
+  getSMSThreads,
+  getSMSForContact,
+  sendSMS,
+  getCalls,
+  initiateCall,
+  endCall,
+  getEmailThreads,
+  sendEmail as sendEmailMessage,
+  getTemplates,
+  createTemplate,
+  updateTemplate,
+  deleteTemplate,
+} from "../controllers/communicationController.js";
+
+const router = Router();
+
+router.get("/sms/threads", getSMSThreads);
+router.get("/sms/thread/:contactId", getSMSForContact);
+router.post("/sms/send", sendSMS);
+
+router.get("/calls", getCalls);
+router.post("/calls/initiate", initiateCall);
+router.post("/calls/end", endCall);
+
+router.get("/email/threads/:contactId", getEmailThreads);
+router.post("/email/send", sendEmailMessage);
+
+router.get("/templates", getTemplates);
+router.post("/templates", createTemplate);
+router.put("/templates/:id", updateTemplate);
+router.delete("/templates/:id", deleteTemplate);
+
+export default router;

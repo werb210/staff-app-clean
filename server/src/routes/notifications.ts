@@ -162,7 +162,7 @@ router.post("/", (req, res) => {
   res.status(201).json({ message: "OK", data: notification });
 });
 
-router.post("/trigger", (req, res) => {
+router.post("/trigger", async (req, res) => {
   if (isPlaceholderSilo(req)) {
     return respondWithPlaceholder(res);
   }
@@ -176,10 +176,13 @@ router.post("/trigger", (req, res) => {
   let metadata: Record<string, string> | undefined;
 
   if (parsed.data.channel === "sms") {
-    const sms = req.silo!.services.sms.sendSms(parsed.data.recipient, parsed.data.message);
+    const sms = req.silo!.services.sms.sendSms(
+      parsed.data.recipient,
+      parsed.data.message,
+    );
     metadata = { smsId: sms.id };
   } else if (parsed.data.channel === "email") {
-    const email = req.silo!.services.emails.sendEmail({
+    const email = await req.silo!.services.emails.sendEmail({
       to: parsed.data.recipient,
       subject: parsed.data.subject ?? "Staff notification",
       body: parsed.data.message,
