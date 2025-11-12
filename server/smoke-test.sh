@@ -6,7 +6,7 @@ set -euo pipefail
 # -----------------------------
 BASE_URL="${BASE_URL:-http://localhost:5000}"
 PORT="${PORT:-5000}"
-SERVER_CMD=("npx" "tsx" "server/src/index.ts")
+SERVER_CMD=("npx" "tsx" "../src/index.ts")
 SERVER_PID=0
 STARTED_SERVER=0
 
