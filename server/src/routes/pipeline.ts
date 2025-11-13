@@ -34,8 +34,8 @@ router.get("/cards", (req, res) => {
  *
  * IMPORTANT:
  * - Controller expects (req, res) ONLY
- * - Do NOT pass 3 arguments
- * - Inject validated payload back into req.body
+ * - Never pass a third arg
+ * - Validate → rewrite req.body → forward
  */
 router.put("/cards/:id/move", (req, res) => {
   const parsed = PipelineTransitionSchema.safeParse({
@@ -53,10 +53,10 @@ router.put("/cards/:id/move", (req, res) => {
     });
   }
 
-  // Controller reads from req.body, so overwrite with validated payload
+  // Inject validated canonical payload so controller consumes clean input
   req.body = parsed.data;
 
-  // Controller expects only (req, res)
+  // Controller MUST be called with exactly (req, res)
   return moveCardHandler(req, res);
 });
 
