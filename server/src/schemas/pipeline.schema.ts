@@ -1,36 +1,30 @@
 import { z } from "zod";
 import { uuidSchema } from "../utils/uuidValidator.js";
-import {
-  ApplicationAssignmentSchema,
-  ApplicationSchema,
-} from "./application.schema.js";
+import { ApplicationSchema } from "./application.schema.js";
 
 /**
  * FINAL CANONICAL PIPELINE STAGES
- * Must match pipelineService.PIPELINE_STAGES exactly.
+ * These MUST match Application.stage values in applicationService.ts
  */
 export const PipelineStageNameSchema = z.enum([
-  "New",
-  "Requires Docs",
-  "In Review",
-  "Sent to Lenders",
-  "Approved",
-  "Declined",
+  "new",
+  "requires_docs",
+  "in_review",
+  "sent_to_lenders",
+  "approved",
+  "declined",
 ]);
 
 export type PipelineStageName = z.infer<typeof PipelineStageNameSchema>;
 
 /**
- * Pipeline stage column schema (as returned by pipelineService.getAllStages)
- *
- * NOTE:
- * - id === stage name (NOT a UUID)
- * - applications is ALWAYS an array (UI doesn't use it, but backend returns [])
+ * Pipeline stage column schema
+ * Returned directly by GET /api/pipeline/board
  */
 export const PipelineStageSchema = z.object({
-  id: PipelineStageNameSchema,        // <── FIXED: stage ID matches service
-  name: PipelineStageNameSchema,
-  stage: PipelineStageNameSchema,
+  id: PipelineStageNameSchema,                 // same as stage name
+  name: PipelineStageNameSchema,               // human-readable key
+  stage: PipelineStageNameSchema,              // actual stage
   position: z.number().int().nonnegative(),
   count: z.number().int().nonnegative(),
   totalLoanAmount: z.number().nonnegative(),
@@ -42,12 +36,16 @@ export const PipelineStageSchema = z.object({
 export type PipelineStage = z.infer<typeof PipelineStageSchema>;
 
 /**
- * Entire board schema
+ * Entire board returned from pipelineService.buildPipeline()
  */
 export const PipelineBoardSchema = z.object({
   stages: z.array(PipelineStageSchema),
   assignments: z.array(
-    ApplicationAssignmentSchema.extend({
+    z.object({
+      id: uuidSchema,
+      applicationId: uuidSchema,
+      assignedTo: z.string(),
+      stage: PipelineStageNameSchema,
       assignedAt: z.string().datetime({ offset: true }),
       note: z.string().max(500).optional(),
     })
@@ -57,7 +55,8 @@ export const PipelineBoardSchema = z.object({
 export type PipelineBoard = z.infer<typeof PipelineBoardSchema>;
 
 /**
- * Stage transition input
+ * Stage transition
+ * (Used by POST /api/pipeline/transition)
  */
 export const PipelineTransitionSchema = z.object({
   applicationId: uuidSchema,
@@ -70,9 +69,14 @@ export const PipelineTransitionSchema = z.object({
 export type PipelineTransitionInput = z.infer<typeof PipelineTransitionSchema>;
 
 /**
- * Assignment schema
+ * Assignment input
+ * (Used by POST /api/pipeline/assign)
  */
-export const PipelineAssignmentSchema = ApplicationAssignmentSchema.extend({
+export const PipelineAssignmentSchema = z.object({
+  id: uuidSchema,
+  applicationId: uuidSchema,
+  assignedTo: z.string(),
+  stage: PipelineStageNameSchema,
   note: z.string().max(500).optional(),
 });
 
