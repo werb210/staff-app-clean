@@ -2,14 +2,7 @@ import { randomUUID } from "crypto";
 import axios from "axios";
 import sendGridMail from "@sendgrid/mail";
 
-/* -----------------------------------------------------
-   Safe Logger Imports
------------------------------------------------------ */
 import { logInfo as safeLogInfo, logError as safeLogError } from "../utils/logger.js";
-
-/* -----------------------------------------------------
-   Types
------------------------------------------------------ */
 
 export type EmailDirection = "incoming" | "outgoing";
 export type EmailStatus = "queued" | "sent" | "failed";
@@ -32,56 +25,33 @@ export interface EmailMessageRecord {
 }
 
 export interface EmailServiceType {
-  sendEmail(payload: {
-    to: string;
-    from?: string;
-    subject: string;
-    body: string;
-  }): Promise<unknown>;
-
-  receiveEmail(payload: {
-    from: string;
-    to: string;
-    subject: string;
-    body: string;
-  }): unknown;
-
-  listEmails(): unknown[];
-
-  listThreads(): unknown[];
+  sendEmail(payload: { to: string; from?: string; subject: string; body: string }): Promise<unknown>;
+  receiveEmail(payload: { from: string; to: string; subject: string; body: string }): unknown;
+  listEmails(): EmailMessageRecord[];
+  listThreads(): { contactId: string; messages: EmailMessageRecord[] }[];
 }
 
-/* -----------------------------------------------------
-   In-memory store (TEMP)
------------------------------------------------------ */
+// ------------------------ In-Memory ------------------------
 const emailMessages: EmailMessageRecord[] = [];
 const contactDirectory = new Map<string, string>();
 
-/* -----------------------------------------------------
-   SendGrid Setup
------------------------------------------------------ */
+// ------------------------ SendGrid Setup ------------------------
 let sendGridReady = false;
-
 const configureSendGrid = (): void => {
   if (sendGridReady) return;
   const apiKey = process.env.SENDGRID_API_KEY;
   if (!apiKey) return;
-
   sendGridMail.setApiKey(apiKey);
   sendGridReady = true;
 };
 
-/* -----------------------------------------------------
-   Contact Helpers
------------------------------------------------------ */
+// ------------------------ Contact Helpers ------------------------
 const registerContactEmail = (contactId: string, email: string): void => {
-  if (email.trim().length > 0) {
-    contactDirectory.set(contactId, email.trim().toLowerCase());
-  }
+  if (email.trim().length > 0) contactDirectory.set(contactId, email.trim().toLowerCase());
 };
 
 const resolveContactEmail = (contactId: string, fallback?: string): string => {
-  if (fallback && fallback.trim().length > 0) {
+  if (fallback?.trim().length) {
     registerContactEmail(contactId, fallback);
     return fallback;
   }
@@ -90,12 +60,9 @@ const resolveContactEmail = (contactId: string, fallback?: string): string => {
   return found;
 };
 
-/* -----------------------------------------------------
-   Send Email via SendGrid
------------------------------------------------------ */
+// ------------------------ Send Email ------------------------
 const sendEmailViaSendGrid = async (record: EmailMessageRecord): Promise<void> => {
   configureSendGrid();
-
   const apiKey = process.env.SENDGRID_API_KEY;
   const fromEmail = process.env.SENDGRID_FROM_EMAIL ?? record.from;
 
@@ -113,7 +80,6 @@ const sendEmailViaSendGrid = async (record: EmailMessageRecord): Promise<void> =
       html: record.body,
       text: record.body,
     });
-
     record.status = "sent";
     record.providerMessageId = response.headers["x-message-id"] as string | undefined;
     safeLogInfo("Email sent via SendGrid", { id: record.id });
@@ -123,13 +89,7 @@ const sendEmailViaSendGrid = async (record: EmailMessageRecord): Promise<void> =
   }
 };
 
-/* -----------------------------------------------------
-   Send Email via Microsoft Graph
------------------------------------------------------ */
-const sendEmailViaGraph = async (
-  record: EmailMessageRecord,
-  senderEmail: string,
-): Promise<void> => {
+const sendEmailViaGraph = async (record: EmailMessageRecord, senderEmail: string): Promise<void> => {
   const tenantId = process.env.O365_TENANT_ID;
   const clientId = process.env.O365_CLIENT_ID;
   const clientSecret = process.env.O365_CLIENT_SECRET;
@@ -176,35 +136,22 @@ const sendEmailViaGraph = async (
   }
 };
 
-/* -----------------------------------------------------
-   Outbound Email Wrapper
------------------------------------------------------ */
+// ------------------------ Outbound Email ------------------------
 export const sendEmail = async (
   contactId: string,
   subject: string,
   body: string,
-  opts: {
-    to?: string;
-    userEmail?: string;
-    sendAsSystem?: boolean;
-    sentBy?: string;
-    metadata?: Record<string, unknown>;
-  } = {}
+  opts: { to?: string; userEmail?: string; sendAsSystem?: boolean; sentBy?: string; metadata?: Record<string, unknown> } = {}
 ): Promise<EmailMessageRecord> => {
   const createdAt = new Date().toISOString();
   const recipient = resolveContactEmail(contactId, opts.to);
   registerContactEmail(contactId, recipient);
 
   const sendAsSystem = opts.sendAsSystem ?? false;
-
   const senderEmail =
     sendAsSystem
-      ? process.env.SENDGRID_FROM_EMAIL ??
-        process.env.O365_SENDER_EMAIL ??
-        "noreply@staff.local"
-      : opts.userEmail ??
-        process.env.O365_SENDER_EMAIL ??
-        "noreply@staff.local";
+      ? process.env.SENDGRID_FROM_EMAIL ?? process.env.O365_SENDER_EMAIL ?? "noreply@staff.local"
+      : opts.userEmail ?? process.env.O365_SENDER_EMAIL ?? "noreply@staff.local";
 
   const record: EmailMessageRecord = {
     id: randomUUID(),
@@ -223,28 +170,14 @@ export const sendEmail = async (
 
   emailMessages.unshift(record);
 
-  if (sendAsSystem) {
-    void sendEmailViaSendGrid(record);
-  } else {
-    void sendEmailViaGraph(record, senderEmail);
-  }
+  if (sendAsSystem) void sendEmailViaSendGrid(record);
+  else void sendEmailViaGraph(record, senderEmail);
 
   return record;
 };
 
-/* -----------------------------------------------------
-   Inbound Email
------------------------------------------------------ */
-export const recordInboundEmail = (
-  contactId: string,
-  payload: {
-    from: string;
-    to: string;
-    subject: string;
-    body: string;
-    metadata?: Record<string, unknown>;
-  }
-): EmailMessageRecord => {
+// ------------------------ Inbound Email ------------------------
+export const recordInboundEmail = (contactId: string, payload: { from: string; to: string; subject: string; body: string; metadata?: Record<string, unknown> }): EmailMessageRecord => {
   const createdAt = new Date().toISOString();
   registerContactEmail(contactId, payload.from);
 
@@ -266,23 +199,10 @@ export const recordInboundEmail = (
   return record;
 };
 
-/* -----------------------------------------------------
-   Email Service
------------------------------------------------------ */
+// ------------------------ EmailService ------------------------
 export class EmailService implements EmailServiceType {
-  public async sendEmail(payload: {
-    to: string;
-    from?: string;
-    subject: string;
-    body: string;
-  }) {
-    const rec = await sendEmail(
-      payload.to,
-      payload.subject,
-      payload.body,
-      { to: payload.to, sendAsSystem: true }
-    );
-
+  public async sendEmail(payload: { to: string; from?: string; subject: string; body: string }) {
+    const rec = await sendEmail(payload.to, payload.subject, payload.body, { to: payload.to, sendAsSystem: true });
     return {
       id: rec.id,
       to: rec.to,
@@ -295,14 +215,8 @@ export class EmailService implements EmailServiceType {
     };
   }
 
-  public receiveEmail(payload: {
-    from: string;
-    to: string;
-    subject: string;
-    body: string;
-  }) {
+  public receiveEmail(payload: { from: string; to: string; subject: string; body: string }) {
     const rec = recordInboundEmail(payload.from, payload);
-
     return {
       id: rec.id,
       to: rec.to,
@@ -330,39 +244,18 @@ export class EmailService implements EmailServiceType {
 
   public listThreads() {
     const map = new Map<string, EmailMessageRecord[]>();
-
     for (const msg of emailMessages) {
       const arr = map.get(msg.contactId) ?? [];
       arr.push(msg);
       map.set(msg.contactId, arr);
     }
-
     return Array.from(map.entries()).map(([contactId, msgs]) => ({
       contactId,
-      messages: msgs
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-        .map((m) => ({
-          id: m.id,
-          to: m.to,
-          from: m.from,
-          subject: m.subject,
-          body: m.body,
-          sentAt: m.createdAt,
-          status: m.status,
-          direction: m.direction === "outgoing" ? "outbound" : "inbound",
-        })),
+      messages: msgs.sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     }));
   }
 }
 
-/* -----------------------------------------------------
-   Exports required by controllers
------------------------------------------------------ */
-export const getEmailThreads = () => emailService.listThreads();
-
-/* -----------------------------------------------------
-   Factory + Singleton
------------------------------------------------------ */
-export const createEmailService = () => new EmailService();
-
+// ------------------------ Factory + Singleton ------------------------
+export const createEmailService = (): EmailService => new EmailService();
 export const emailService = new EmailService();
