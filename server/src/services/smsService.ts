@@ -81,9 +81,7 @@ const getTwilioClient = (): Twilio | null => {
 const resolveFromNumber = (provided?: string): string => {
   if (provided && provided.trim().length > 0) return provided;
 
-  // Enforce SILO-SPECIFIC logic
   const silo = process.env.APP_SILO?.toUpperCase() ?? "BF";
-
   const bfNumber = process.env.BF_SMS_NUMBER;
   const slfNumber = process.env.SLF_SMS_NUMBER;
 
@@ -92,7 +90,6 @@ const resolveFromNumber = (provided?: string): string => {
     return slfNumber;
   }
 
-  // Default → BF silo
   if (!bfNumber) throw new Error("BF_SMS_NUMBER not configured");
   return bfNumber;
 };
@@ -183,7 +180,6 @@ export const sendSMS = async (
   const client = getTwilioClient();
 
   if (!client) {
-    // If Twilio is not configured, mark as “sent” (queue-simulation)
     record.status = "sent";
     return record;
   }
@@ -201,7 +197,7 @@ export const sendSMS = async (
       contactId,
       sid: response.sid,
     });
-  } catch (err) {
+  } catch (err: unknown) {
     record.status = "failed";
     safeLogError("Failed to send SMS via Twilio", err);
   }
@@ -210,7 +206,7 @@ export const sendSMS = async (
 };
 
 /* -----------------------------------------------------
-   Public: Record an Inbound SMS (via Twilio Webhook)
+   Public: Record an Inbound SMS
 ----------------------------------------------------- */
 
 export const recordInboundSMS = (
@@ -241,7 +237,7 @@ export const recordInboundSMS = (
 };
 
 /* -----------------------------------------------------
-   Export Class Wrapper (API consumption)
+   Export Class Wrapper
 ----------------------------------------------------- */
 
 export class SMSService {
