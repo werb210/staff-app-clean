@@ -5,7 +5,7 @@ import bodyParser from "body-parser";
 // Routes
 import documentRouter, {
   applicationDocumentsRouter,
-} from "./routes/index.js"; // this matches YOUR file path
+} from "./routes/documents.js"; // <-- FIXED PATH
 
 // Create server instance
 const app = express();
@@ -33,11 +33,11 @@ app.use("/api/documents", documentRouter);
 app.use("/api/applications", applicationDocumentsRouter);
 
 /* ---------------------------------------------------------
-   SERVER START
+   START SERVER
 --------------------------------------------------------- */
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () =>
-  console.log(`Server running on http://localhost:${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
 
 export default app;
