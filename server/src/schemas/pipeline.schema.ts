@@ -5,23 +5,27 @@ import {
   ApplicationSchema,
 } from "./application.schema.js";
 
-// New pipeline stages aligned with Staff Portal rules
-export const ApplicationStageSchema = z.enum([
-  "new",
-  "requires_docs",
-  "in_review",
-  "ready_for_lenders",
-  "sent_to_lenders",
-  "approved",
-  "declined",
+/**
+ * FINAL, CANONICAL PIPELINE STAGES
+ */
+export const PipelineStageNameSchema = z.enum([
+  "New",
+  "Requires Docs",
+  "In Review",
+  "Sent to Lenders",
+  "Approved",
+  "Declined",
 ]);
 
-export type ApplicationStage = z.infer<typeof ApplicationStageSchema>;
+export type PipelineStageName = z.infer<typeof PipelineStageNameSchema>;
 
+/**
+ * Pipeline stage structure (column)
+ */
 export const PipelineStageSchema = z.object({
-  id: uuidSchema,
-  name: ApplicationStageSchema,       // canonical stage name
-  stage: ApplicationStageSchema,      // duplicate for UI compatibility
+  id: uuidSchema,                          // stage UUID
+  name: PipelineStageNameSchema,           // UI name
+  stage: PipelineStageNameSchema,          // duplicate for compatibility
   position: z.number().int().nonnegative(),
   count: z.number().int().nonnegative(),
   totalLoanAmount: z.number().nonnegative(),
@@ -32,6 +36,9 @@ export const PipelineStageSchema = z.object({
 
 export type PipelineStage = z.infer<typeof PipelineStageSchema>;
 
+/**
+ * Entire board with all columns + assignment history
+ */
 export const PipelineBoardSchema = z.object({
   stages: z.array(PipelineStageSchema),
   assignments: z.array(
@@ -44,16 +51,22 @@ export const PipelineBoardSchema = z.object({
 
 export type PipelineBoard = z.infer<typeof PipelineBoardSchema>;
 
+/**
+ * Stage transition input
+ */
 export const PipelineTransitionSchema = z.object({
   applicationId: uuidSchema,
-  fromStage: ApplicationStageSchema.optional(),
-  toStage: ApplicationStageSchema,
+  fromStage: PipelineStageNameSchema.optional(),
+  toStage: PipelineStageNameSchema,
   assignedTo: z.string().min(1).optional(),
   note: z.string().max(500).optional(),
 });
 
 export type PipelineTransitionInput = z.infer<typeof PipelineTransitionSchema>;
 
+/**
+ * Assignment
+ */
 export const PipelineAssignmentSchema = ApplicationAssignmentSchema.extend({
   note: z.string().max(500).optional(),
 });
