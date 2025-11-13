@@ -3,6 +3,7 @@ import {
   DocumentReuploadSchema,
   DocumentUploadMetadataSchema,
 } from "../schemas/document.schema.js";
+
 import {
   acceptDocument,
   downloadDocument,
@@ -13,23 +14,26 @@ import {
   reuploadDocument,
   saveNewDocument,
   streamDocument,
+  deleteDocument,               // ✔ ADDED
 } from "../services/documentService.js";
 
+/* ---------------------------------------------------------
+   UPLOAD
+--------------------------------------------------------- */
 export const uploadDocument = async (req: Request, res: Response) => {
   const file = req.file;
-  if (!file) {
-    return res.status(400).json({ message: "File is required" });
-  }
-  const parsedMetadata = DocumentUploadMetadataSchema.safeParse(req.body);
-  if (!parsedMetadata.success) {
+  if (!file) return res.status(400).json({ message: "File is required" });
+
+  const parsed = DocumentUploadMetadataSchema.safeParse(req.body);
+  if (!parsed.success)
     return res.status(400).json({ message: "Invalid document metadata" });
-  }
+
   try {
     const document = await saveNewDocument(
-      parsedMetadata.data,
+      parsed.data,
       file.buffer,
       file.mimetype || "application/octet-stream",
-      file.originalname,
+      file.originalname
     );
     return res.status(201).json({ data: document });
   } catch (error) {
@@ -37,6 +41,9 @@ export const uploadDocument = async (req: Request, res: Response) => {
   }
 };
 
+/* ---------------------------------------------------------
+   GET SINGLE
+--------------------------------------------------------- */
 export const getDocument = (req: Request, res: Response) => {
   try {
     const document = getDocumentById(req.params.id);
@@ -46,6 +53,9 @@ export const getDocument = (req: Request, res: Response) => {
   }
 };
 
+/* ---------------------------------------------------------
+   PREVIEW INLINE
+--------------------------------------------------------- */
 export const previewDocument = async (req: Request, res: Response) => {
   try {
     const document = getDocumentById(req.params.id);
@@ -57,16 +67,19 @@ export const previewDocument = async (req: Request, res: Response) => {
   }
 };
 
+/* ---------------------------------------------------------
+   DOWNLOAD SINGLE
+--------------------------------------------------------- */
 export const downloadDocumentHandler = async (req: Request, res: Response) => {
   try {
     const result = await downloadDocument(req.params.id);
-    if (!result) {
+    if (!result)
       return res.status(404).json({ message: "Document not found" });
-    }
+
     res.setHeader("Content-Type", result.document.mimeType);
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="${result.document.name}"`,
+      `attachment; filename="${result.document.name}"`
     );
     return res.send(result.buffer);
   } catch (error) {
@@ -74,6 +87,9 @@ export const downloadDocumentHandler = async (req: Request, res: Response) => {
   }
 };
 
+/* ---------------------------------------------------------
+   ACCEPT / REJECT
+--------------------------------------------------------- */
 export const acceptDocumentHandler = (req: Request, res: Response) => {
   try {
     const document = acceptDocument(req.params.id);
@@ -92,22 +108,24 @@ export const rejectDocumentHandler = (req: Request, res: Response) => {
   }
 };
 
+/* ---------------------------------------------------------
+   REUPLOAD
+--------------------------------------------------------- */
 export const reuploadDocumentHandler = async (req: Request, res: Response) => {
   const file = req.file;
-  if (!file) {
-    return res.status(400).json({ message: "File is required" });
-  }
+  if (!file) return res.status(400).json({ message: "File is required" });
+
   const parsed = DocumentReuploadSchema.safeParse(req.body);
-  if (!parsed.success) {
+  if (!parsed.success)
     return res.status(400).json({ message: "Invalid payload" });
-  }
+
   try {
     const document = await reuploadDocument(
       req.params.id,
       file.buffer,
       file.mimetype || "application/octet-stream",
       file.originalname,
-      parsed.data.category,
+      parsed.data.category
     );
     return res.json({ data: document });
   } catch (error) {
@@ -115,7 +133,13 @@ export const reuploadDocumentHandler = async (req: Request, res: Response) => {
   }
 };
 
-export const getDocumentsForApplicationHandler = (req: Request, res: Response) => {
+/* ---------------------------------------------------------
+   GET ALL FOR APPLICATION
+--------------------------------------------------------- */
+export const getDocumentsForApplicationHandler = (
+  req: Request,
+  res: Response
+) => {
   const { appId } = req.params;
   try {
     const documents = getDocumentsForApplication(appId);
@@ -125,21 +149,42 @@ export const getDocumentsForApplicationHandler = (req: Request, res: Response) =
   }
 };
 
-export const downloadAllDocumentsHandler = async (req: Request, res: Response) => {
+/* ---------------------------------------------------------
+   DOWNLOAD ALL AS ZIP
+--------------------------------------------------------- */
+export const downloadAllDocumentsHandler = async (
+  req: Request,
+  res: Response
+) => {
   const { appId } = req.params;
   try {
     const documents = getDocumentsForApplication(appId);
-    if (documents.length === 0) {
+    if (documents.length === 0)
       return res.status(404).json({ message: "No documents available" });
-    }
-    const archive = await downloadMultipleDocuments(documents.map((doc) => doc.id));
+
+    const archive = await downloadMultipleDocuments(
+      documents.map((doc) => doc.id)
+    );
+
     res.setHeader("Content-Type", "application/zip");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="${appId}-documents.zip"`,
+      `attachment; filename="${appId}-documents.zip"`
     );
     return res.send(archive);
   } catch (error) {
     return res.status(500).json({ message: (error as Error).message });
+  }
+};
+
+/* ---------------------------------------------------------
+   DELETE (✔ ADDED)
+--------------------------------------------------------- */
+export const deleteDocumentHandler = (req: Request, res: Response) => {
+  try {
+    const document = deleteDocument(req.params.id);
+    return res.status(200).json({ data: document });
+  } catch (error) {
+    return res.status(404).json({ message: (error as Error).message });
   }
 };
