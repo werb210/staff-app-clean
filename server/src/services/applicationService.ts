@@ -242,6 +242,7 @@ export class ApplicationService {
     });
   }
 
+  /** FIXED: restored missing `ready_for_lenders` stage */
   public publishApplication(
     id: string,
     publishedBy: string
@@ -261,12 +262,13 @@ export class ApplicationService {
     });
   }
 
-  /** FINAL PIPELINE STAGES — EXACT MATCH WITH YOUR SPEC */
+  /** FIXED LIST — EXACT FULL PIPELINE */
   public buildPipeline() {
     const stages: ApplicationStage[] = [
       "new",
       "requires_docs",
       "in_review",
+      "ready_for_lenders",   // ← MISSING BEFORE — restored
       "sent_to_lenders",
       "approved",
       "declined",
@@ -340,6 +342,8 @@ export class ApplicationService {
         return "Upload requested documents.";
       case "in_review":
         return "Your application is under review.";
+      case "ready_for_lenders":
+        return "We are preparing your application for lenders.";
       case "sent_to_lenders":
         return "Lenders are reviewing your file.";
       case "approved":
