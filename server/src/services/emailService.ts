@@ -2,7 +2,9 @@ import { randomUUID } from "crypto";
 import axios from "axios";
 import sendGridMail from "@sendgrid/mail";
 
-// If logger doesn't exist or fails, fallback to console.
+/* -----------------------------------------------------
+   Safe Logger Imports
+----------------------------------------------------- */
 let safeLogInfo: (msg: string, meta?: any) => void = console.log;
 let safeLogError: (msg: string, meta?: any) => void = console.error;
 
@@ -11,9 +13,12 @@ try {
   safeLogInfo = logInfo ?? console.log;
   safeLogError = logError ?? console.error;
 } catch {
-  // No logger found — safe fallback already set
+  /* ignore */
 }
 
+/* -----------------------------------------------------
+   Types
+----------------------------------------------------- */
 export type EmailDirection = "incoming" | "outgoing";
 export type EmailStatus = "queued" | "sent" | "failed";
 export type EmailProvider = "sendgrid" | "graph" | "manual";
@@ -34,14 +39,15 @@ export interface EmailMessageRecord {
   metadata?: Record<string, unknown>;
 }
 
-// TEMP storage until DB integration
+/* -----------------------------------------------------
+   In-memory store (TEMP)
+----------------------------------------------------- */
 const emailMessages: EmailMessageRecord[] = [];
 const contactDirectory = new Map<string, string>();
 
 /* -----------------------------------------------------
    SendGrid Setup
 ----------------------------------------------------- */
-
 let sendGridReady = false;
 
 const configureSendGrid = (): void => {
@@ -56,7 +62,6 @@ const configureSendGrid = (): void => {
 /* -----------------------------------------------------
    Helpers
 ----------------------------------------------------- */
-
 const registerContactEmail = (contactId: string, email: string): void => {
   if (email.trim().length > 0) {
     contactDirectory.set(contactId, email.trim().toLowerCase());
@@ -76,7 +81,6 @@ const resolveContactEmail = (contactId: string, fallback?: string): string => {
 /* -----------------------------------------------------
    Send Email via SendGrid
 ----------------------------------------------------- */
-
 const sendEmailViaSendGrid = async (record: EmailMessageRecord): Promise<void> => {
   configureSendGrid();
 
@@ -110,7 +114,6 @@ const sendEmailViaSendGrid = async (record: EmailMessageRecord): Promise<void> =
 /* -----------------------------------------------------
    Send Email via Microsoft Graph
 ----------------------------------------------------- */
-
 const sendEmailViaGraph = async (
   record: EmailMessageRecord,
   senderEmail: string,
@@ -164,9 +167,8 @@ const sendEmailViaGraph = async (
 };
 
 /* -----------------------------------------------------
-   Public API
+   Core Send API
 ----------------------------------------------------- */
-
 export const sendEmail = async (
   contactId: string,
   subject: string,
@@ -220,6 +222,9 @@ export const sendEmail = async (
   return record;
 };
 
+/* -----------------------------------------------------
+   Inbound email (manual)
+----------------------------------------------------- */
 export const recordInboundEmail = (
   contactId: string,
   payload: {
@@ -251,6 +256,9 @@ export const recordInboundEmail = (
   return record;
 };
 
+/* -----------------------------------------------------
+   Email Service Class
+----------------------------------------------------- */
 export class EmailService {
   public async sendEmail(payload: {
     to: string;
@@ -314,14 +322,14 @@ export class EmailService {
     const map = new Map<string, EmailMessageRecord[]>();
 
     for (const msg of emailMessages) {
-      const key = msg.direction === "outgoing" ? msg.to : msg.from;
+      const key = msg.contactId;
       const arr = map.get(key) ?? [];
       arr.push(msg);
       map.set(key, arr);
     }
 
-    return Array.from(map.entries()).map(([contact, items]) => ({
-      contact,
+    return Array.from(map.entries()).map(([contactId, items]) => ({
+      contactId,
       messages: items
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
         .map((m) => ({
@@ -338,4 +346,15 @@ export class EmailService {
   }
 }
 
+/* -----------------------------------------------------
+   Additional Exports Needed by Controller
+----------------------------------------------------- */
+
+export const getEmailThreads = () => emailService.listThreads();
+
+export const createEmailService = () => new EmailService();
+
+/* -----------------------------------------------------
+   Default singleton
+----------------------------------------------------- */
 export const emailService = new EmailService();
