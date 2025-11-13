@@ -1,23 +1,20 @@
 import { Router } from "express";
-import { z } from "zod";
-import {
-  PipelineTransitionSchema,
-} from "../schemas/pipeline.schema.js";
+import { PipelineTransitionSchema } from "../schemas/pipeline.schema.js";
 
 import {
+  getStages,
+  getCards,
+  moveCardHandler,
   getApplicationDataHandler,
   getApplicationDocumentsHandler,
   getApplicationLendersHandler,
-  getCards,
-  getStages,
-  moveCardHandler,
 } from "../controllers/pipelineController.js";
 
 const router = Router();
 
 /**
  * GET /api/pipeline/stages
- * Returns the full pipeline board
+ * Full board (columns + cards)
  */
 router.get("/stages", (req, res) => {
   return getStages(req, res);
@@ -25,7 +22,7 @@ router.get("/stages", (req, res) => {
 
 /**
  * GET /api/pipeline/cards
- * Returns all application cards
+ * Returns all cards (each card = applicationId)
  */
 router.get("/cards", (req, res) => {
   return getCards(req, res);
@@ -33,11 +30,11 @@ router.get("/cards", (req, res) => {
 
 /**
  * PUT /api/pipeline/cards/:id/move
- * Stage transition
+ * Stage transition with strict schema validation
  */
 router.put("/cards/:id/move", (req, res) => {
   const parsed = PipelineTransitionSchema.safeParse({
-    applicationId: req.params.id,
+    applicationId: req.params.id,        // canonical cardId
     fromStage: req.body.fromStage,
     toStage: req.body.toStage,
     assignedTo: req.body.assignedTo,
@@ -51,11 +48,11 @@ router.put("/cards/:id/move", (req, res) => {
     });
   }
 
+  // Pass the validated object down to the controller
   return moveCardHandler(req, res, parsed.data);
 });
 
 /**
- * GET /api/pipeline/cards/:id/application
  * Drawer → Application tab
  */
 router.get("/cards/:id/application", (req, res) => {
@@ -63,7 +60,6 @@ router.get("/cards/:id/application", (req, res) => {
 });
 
 /**
- * GET /api/pipeline/cards/:id/documents
  * Drawer → Documents tab
  */
 router.get("/cards/:id/documents", (req, res) => {
@@ -71,7 +67,6 @@ router.get("/cards/:id/documents", (req, res) => {
 });
 
 /**
- * GET /api/pipeline/cards/:id/lenders
  * Drawer → Lenders tab
  */
 router.get("/cards/:id/lenders", (req, res) => {
