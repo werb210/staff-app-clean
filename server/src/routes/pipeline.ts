@@ -53,10 +53,10 @@ router.put("/cards/:id/move", (req, res) => {
     });
   }
 
-  // Controller reads from req.body, so overwrite it with validated data
+  // Controller reads from req.body, so overwrite with validated payload
   req.body = parsed.data;
 
-  // MUST call with only (req, res)
+  // Controller expects only (req, res)
   return moveCardHandler(req, res);
 });
 
