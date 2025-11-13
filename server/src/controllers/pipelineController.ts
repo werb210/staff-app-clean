@@ -9,7 +9,6 @@ import {
 } from "../services/pipelineService.js";
 import {
   PipelineTransitionSchema,
-  PipelineStageNameSchema,
   type PipelineStageName,
 } from "../schemas/pipeline.schema.js";
 
@@ -40,23 +39,21 @@ export const getCards = (_req: Request, res: Response) => {
 };
 
 /**
- * Normalizes various inputs ("sent_to_lenders", "Sent to Lender", etc.)
- * to **canonical pipeline stage names**
+ * Normalize any ugly/messy stage values → canonical PipelineStageName
  */
 const normalizeStage = (value: unknown): PipelineStageName | undefined => {
   if (typeof value !== "string") return undefined;
 
-  const trimmed = value.trim().toLowerCase();
+  const s = value.trim().toLowerCase();
 
-  switch (trimmed) {
+  switch (s) {
     case "new":
     case "new application":
       return "New";
 
     case "requires docs":
     case "requires_documents":
-    case "requires_documents":
-    case "requiresdocs":
+    case "requiresdocuments":
       return "Requires Docs";
 
     case "in review":
@@ -83,10 +80,9 @@ const normalizeStage = (value: unknown): PipelineStageName | undefined => {
 
 /**
  * PUT /api/pipeline/cards/:id/move
- * Validates → normalizes → applies Big Fix transition
+ * Strict validation + Big Fix transition
  */
 export const moveCardHandler = (req: Request, res: Response) => {
-  // Normalize incoming stage names BEFORE schema validation
   const normalizedToStage = normalizeStage(req.body.toStage);
   const normalizedFromStage = normalizeStage(req.body.fromStage);
 
