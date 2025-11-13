@@ -16,16 +16,24 @@ import {
 
 const router = Router();
 
+/* ---------------- SMS ---------------- */
+
 router.get("/sms/threads", getSMSThreads);
 router.get("/sms/thread/:contactId", getSMSForContact);
 router.post("/sms/send", sendSMS);
+
+/* ---------------- Calls ---------------- */
 
 router.get("/calls", getCalls);
 router.post("/calls/initiate", initiateCall);
 router.post("/calls/end", endCall);
 
-router.get("/email/threads/:contactId", getEmailThreads);
+/* ---------------- Email ---------------- */
+// Threads no longer take a contactId parameter
+router.get("/email/threads", getEmailThreads);
 router.post("/email/send", sendEmailMessage);
+
+/* ---------------- Templates ---------------- */
 
 router.get("/templates", getTemplates);
 router.post("/templates", createTemplate);
