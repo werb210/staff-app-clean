@@ -34,7 +34,7 @@ export interface EmailMessageRecord {
   metadata?: Record<string, unknown>;
 }
 
-// The in-memory array is fine TEMPORARILY while DB integration work is done.
+// TEMP storage until DB integration
 const emailMessages: EmailMessageRecord[] = [];
 const contactDirectory = new Map<string, string>();
 
@@ -47,7 +47,7 @@ let sendGridReady = false;
 const configureSendGrid = (): void => {
   if (sendGridReady) return;
   const apiKey = process.env.SENDGRID_API_KEY;
-  if (!apiKey) return; // fail silently, but email will not send
+  if (!apiKey) return;
 
   sendGridMail.setApiKey(apiKey);
   sendGridReady = true;
@@ -69,9 +69,7 @@ const resolveContactEmail = (contactId: string, fallback?: string): string => {
     return fallback;
   }
   const found = contactDirectory.get(contactId);
-  if (!found) {
-    throw new Error(`Contact ${contactId} email is unknown`);
-  }
+  if (!found) throw new Error(`Contact ${contactId} email is unknown`);
   return found;
 };
 
@@ -103,14 +101,14 @@ const sendEmailViaSendGrid = async (record: EmailMessageRecord): Promise<void> =
     record.status = "sent";
     record.providerMessageId = response.headers["x-message-id"] as string | undefined;
     safeLogInfo("Email sent via SendGrid", { id: record.id });
-  } catch (err) {
+  } catch (err: unknown) {
     record.status = "failed";
     safeLogError("Failed to send via SendGrid", err);
   }
 };
 
 /* -----------------------------------------------------
-   Send Email via Microsoft Graph (App-Only Flow)
+   Send Email via Microsoft Graph
 ----------------------------------------------------- */
 
 const sendEmailViaGraph = async (
@@ -159,7 +157,7 @@ const sendEmailViaGraph = async (
 
     record.status = "sent";
     safeLogInfo("Email sent via MS Graph", { id: record.id });
-  } catch (err) {
+  } catch (err: unknown) {
     record.status = "failed";
     safeLogError("Failed to send via Microsoft Graph", err);
   }
@@ -213,7 +211,6 @@ export const sendEmail = async (
 
   emailMessages.unshift(record);
 
-  // Fire async
   if (sendAsSystem) {
     void sendEmailViaSendGrid(record);
   } else {
