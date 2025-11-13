@@ -30,7 +30,9 @@ import {
 
 import { logError } from "../utils/logger.js";
 
-/* -------------------- Validation -------------------- */
+/* ---------------------------------------------------------
+   Validation
+--------------------------------------------------------- */
 
 const smsSendSchema = z.object({
   contactId: z.string().uuid(),
@@ -70,7 +72,9 @@ const templateUpdateSchema = templateCreateSchema.partial().refine(
   { message: "At least one field is required" }
 );
 
-/* -------------------- Helpers -------------------- */
+/* ---------------------------------------------------------
+   Helpers
+--------------------------------------------------------- */
 
 const extractUser = (req: Request): AuthenticatedUser | undefined =>
   (req as Request & { user?: AuthenticatedUser }).user;
@@ -78,7 +82,9 @@ const extractUser = (req: Request): AuthenticatedUser | undefined =>
 const sendValidationError = (res: Response, message: string) =>
   res.status(400).json({ message });
 
-/* -------------------- SMS -------------------- */
+/* ---------------------------------------------------------
+   SMS
+--------------------------------------------------------- */
 
 export const getSMSThreads = async (_req: Request, res: Response) => {
   const threads = await getSmsThreads();
@@ -115,7 +121,9 @@ export const sendSMS = async (req: Request, res: Response) => {
   }
 };
 
-/* -------------------- Calls -------------------- */
+/* ---------------------------------------------------------
+   Calls
+--------------------------------------------------------- */
 
 export const getCalls = async (_req: Request, res: Response) => {
   const calls = await fetchCalls();
@@ -159,7 +167,9 @@ export const endCall = async (req: Request, res: Response) => {
   }
 };
 
-/* -------------------- Email -------------------- */
+/* ---------------------------------------------------------
+   Email
+--------------------------------------------------------- */
 
 export const getEmailThreads = async (_req: Request, res: Response) => {
   const threads = emailService.listThreads();
@@ -192,7 +202,9 @@ export const sendEmail = async (req: Request, res: Response) => {
   }
 };
 
-/* -------------------- Templates -------------------- */
+/* ---------------------------------------------------------
+   Templates
+--------------------------------------------------------- */
 
 export const getTemplates = async (_req: Request, res: Response) => {
   const templates = await fetchTemplates();
@@ -204,7 +216,11 @@ export const createTemplate = async (req: Request, res: Response) => {
   if (!parsed.success) return sendValidationError(res, "Invalid template payload");
 
   const user = extractUser(req);
-  const template = await persistTemplate({ ...parsed.data, createdBy: user?.id });
+
+  const template = await persistTemplate({
+    ...parsed.data,
+    createdBy: user?.id,
+  });
 
   return res.status(201).json({ message: "OK", data: template });
 };
