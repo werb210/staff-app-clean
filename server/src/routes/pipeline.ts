@@ -30,11 +30,16 @@ router.get("/cards", (req, res) => {
 
 /**
  * PUT /api/pipeline/cards/:id/move
- * Stage transition with strict schema validation
+ * Strict validation + Big Fix
+ *
+ * IMPORTANT:
+ * - Controller expects (req, res) ONLY
+ * - Do NOT pass 3 arguments
+ * - Inject validated payload back into req.body
  */
 router.put("/cards/:id/move", (req, res) => {
   const parsed = PipelineTransitionSchema.safeParse({
-    applicationId: req.params.id,        // canonical cardId
+    applicationId: req.params.id,
     fromStage: req.body.fromStage,
     toStage: req.body.toStage,
     assignedTo: req.body.assignedTo,
@@ -48,8 +53,11 @@ router.put("/cards/:id/move", (req, res) => {
     });
   }
 
-  // Pass the validated object down to the controller
-  return moveCardHandler(req, res, parsed.data);
+  // Controller reads from req.body, so overwrite it with validated data
+  req.body = parsed.data;
+
+  // MUST call with only (req, res)
+  return moveCardHandler(req, res);
 });
 
 /**
