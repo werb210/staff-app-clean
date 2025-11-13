@@ -1,11 +1,15 @@
 import { Router } from "express";
+
 import {
   PipelineBoardSchema,
   PipelineTransitionSchema,
   PipelineAssignmentSchema,
 } from "../schemas/pipeline.schema.js";
 
-import { isPlaceholderSilo, respondWithPlaceholder } from "../utils/placeholder.js";
+import {
+  isPlaceholderSilo,
+  respondWithPlaceholder,
+} from "../utils/placeholder.js";
 
 const router = Router();
 
@@ -17,13 +21,13 @@ router.get("/board", (req, res) => {
 
   try {
     const stages = req.silo!.services.applications.buildPipeline();
-    const board = {
+
+    const board = PipelineBoardSchema.parse({
       stages,
       assignments: [],
-    };
+    });
 
-    const parsed = PipelineBoardSchema.parse(board);
-    res.json({ message: "OK", data: parsed });
+    res.json({ message: "OK", data: board });
   } catch (err) {
     console.error("Pipeline board error:", err);
     res.status(500).json({ error: "Failed to load pipeline board" });
@@ -44,10 +48,7 @@ router.post("/transition", (req, res) => {
       input.toStage
     );
 
-    res.json({
-      message: "OK",
-      data: updated,
-    });
+    res.json({ message: "OK", data: updated });
   } catch (err) {
     console.error("Pipeline transition error:", err);
     res.status(400).json({ error: "Invalid pipeline transition" });
@@ -69,10 +70,7 @@ router.post("/assign", (req, res) => {
       input.stage
     );
 
-    res.json({
-      message: "OK",
-      data: updated,
-    });
+    res.json({ message: "OK", data: updated });
   } catch (err) {
     console.error("Pipeline assignment error:", err);
     res.status(400).json({ error: "Invalid application assignment" });
