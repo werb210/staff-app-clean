@@ -1,7 +1,10 @@
-// server/src/silos/registry.ts
+#!/usr/bin/env bash
+set -euo pipefail
+
+cat > server/src/silos/registry.ts <<'EOF'
 import { createApplicationService } from "../services/applicationService.js";
 import { createAiService } from "../services/aiService.js";
-import { createDocumentService } from "../services/documentService.js";
+import { createDocumentService, documentService } from "../services/documentService.js";
 import { createLenderService } from "../services/lenderService.js";
 import { createPipelineService } from "../services/pipelineService.js";
 import { EmailService, emailService } from "../services/emailService.js";
@@ -42,7 +45,7 @@ function createBFContext(): SiloContext {
   const ai = createAiService();
   const ocr = createOcrService();
   const applications = createApplicationService({ ai });
-  const documents = createDocumentService();
+  const documents = documentService;
   const lenders = createLenderService({ applicationService: applications, ai });
   const pipeline = createPipelineService();
   const emails = emailService;
@@ -74,20 +77,7 @@ function createBFContext(): SiloContext {
       companyName: "Aurora Manufacturing",
       createdAt: "2024-05-01T10:00:00.000Z",
       updatedAt: "2024-05-10T16:30:00.000Z",
-      timeline: [
-        {
-          id: "bf-contact-1-event-1",
-          type: "call",
-          message: "Completed onboarding call with borrower.",
-          createdAt: "2024-05-02T14:30:00.000Z",
-        },
-        {
-          id: "bf-contact-1-event-2",
-          type: "email",
-          message: "Sent checklist of required financial statements.",
-          createdAt: "2024-05-06T18:15:00.000Z",
-        },
-      ],
+      timeline: [],
     },
   ]);
   const users = createUserService([
@@ -129,10 +119,7 @@ function createBFContext(): SiloContext {
       tasks,
       users,
       contacts,
-      metadata: {
-        silo: "BF",
-        documentStatusDefault: "review",
-      },
+      metadata: { silo: "BF", documentStatusDefault: "review" },
     },
     auth,
   };
@@ -142,7 +129,7 @@ function createSLFContext(): SiloContext {
   const ai = createAiService();
   const ocr = createOcrService();
   const applications = createApplicationService({ ai });
-  const documents = createDocumentService();
+  const documents = documentService;
   const lenders = createLenderService({ applicationService: applications, ai });
   const pipeline = createPipelineService();
   const emails = emailService;
@@ -151,12 +138,7 @@ function createSLFContext(): SiloContext {
   const backups = createBackupService();
   const retryQueue = createRetryQueueService();
   const tasks = createTaskService([
-    {
-      id: "slf-task-1",
-      name: "Contact borrower",
-      dueAt: new Date().toISOString(),
-      status: "pending",
-    },
+    { id: "slf-task-1", name: "Contact borrower", dueAt: new Date().toISOString(), status: "pending" },
   ]);
   const contacts = createContactsService([
     {
@@ -168,36 +150,14 @@ function createSLFContext(): SiloContext {
       companyName: "Brightline Studios",
       createdAt: "2024-03-11T12:20:00.000Z",
       updatedAt: "2024-04-02T09:10:00.000Z",
-      timeline: [
-        {
-          id: "slf-contact-1-event-1",
-          type: "email",
-          message: "Shared updated financial package with underwriting team.",
-          createdAt: "2024-03-15T17:45:00.000Z",
-        },
-        {
-          id: "slf-contact-1-event-2",
-          type: "system",
-          message: "Automated credit pull completed.",
-          createdAt: "2024-03-18T08:00:00.000Z",
-        },
-      ],
+      timeline: [],
     },
   ]);
   const users = createUserService([
-    {
-      id: "slf-user-1",
-      name: "Sam Lending",
-      email: "sam.ops@slf.example",
-      role: "manager",
-    },
+    { id: "slf-user-1", name: "Sam Lending", email: "sam.ops@slf.example", role: "manager" },
   ]);
 
-  const auth = new PasskeyAuthService({
-    silo: "SLF",
-    secret: "slf-secret",
-    users: commonUsers.SLF,
-  });
+  const auth = new PasskeyAuthService({ silo: "SLF", secret: "slf-secret", users: commonUsers.SLF });
 
   return {
     silo: "SLF",
@@ -217,10 +177,7 @@ function createSLFContext(): SiloContext {
       tasks,
       users,
       contacts,
-      metadata: {
-        silo: "SLF",
-        documentStatusDefault: "processing",
-      },
+      metadata: { silo: "SLF", documentStatusDefault: "processing" },
     },
     auth,
   };
@@ -231,7 +188,7 @@ function createBIContext(): SiloContext {
   const ai = createAiService();
   const ocr = createOcrService();
   const applications = createApplicationService({ ai });
-  const documents = createDocumentService();
+  const documents = documentService;
   const lenders = createLenderService({ applicationService: applications, ai });
   const pipeline = createPipelineService();
   const emails = emailService;
@@ -261,10 +218,7 @@ function createBIContext(): SiloContext {
       tasks,
       users,
       contacts,
-      metadata: {
-        silo: "BI",
-        documentStatusDefault: "processing",
-      },
+      metadata: { silo: "BI", documentStatusDefault: "processing" },
     },
     auth: placeholderAuth,
   };
@@ -277,3 +231,6 @@ export const resolveSilo = (silo: SiloKey): SiloContext => {
     case "BI": return createBIContext();
   }
 };
+EOF
+
+echo "[✅] registry.ts rewritten and fixed"
