@@ -2,33 +2,24 @@ import { randomUUID } from "crypto";
 import { applicationService } from "./applicationService.js";
 import { getDocumentsForApplication } from "./documentService.js";
 import { getAll as getAllLenders } from "./lendersService.js";
-import {
-  type PipelineTransitionInput,
-} from "../schemas/pipeline.schema.js";
+import { type PipelineStage, PIPELINE_STAGES } from "../schemas/pipeline.schema.js";
 
 /**
- * Official Pipeline Columns
+ * Canonical PipelineCard stored in memory
  */
-export const PIPELINE_STAGES = [
-  "New",
-  "In Review",
-  "Requires Docs",
-  "Sent to Lender",
-  "Accepted",
-] as const;
-
-export type PipelineStage = (typeof PIPELINE_STAGES)[number];
-
 interface PipelineCard {
-  id: string;              // applicationId (canonical)
+  id: string;              // cardId = applicationId
   applicationId: string;
   applicantName: string;
+  amount: number;
   stage: PipelineStage;
   updatedAt: string;
-  amount: number;
   assignedTo?: string;
 }
 
+/**
+ * Card timeline
+ */
 interface TimelineEvent {
   id: string;
   applicationId: string;
@@ -37,29 +28,32 @@ interface TimelineEvent {
   createdAt: string;
 }
 
+/**
+ * Internal stores
+ */
 const cards = new Map<string, PipelineCard>();
-const history = new Map<string, TimelineEvent[]>();
+const timeline = new Map<string, TimelineEvent[]>();
 
 /**
- * Create a card from a real ApplicationService application
+ * Build a card from a real application (for initialization only)
  */
-const buildCardFromApplication = (app: any): PipelineCard => {
+const buildInitialCard = (app: any): PipelineCard => {
   const now = new Date().toISOString();
-
   let stage: PipelineStage = "New";
 
-  // Rule #1: no docs -> Requires Docs
   const docs = getDocumentsForApplication(app.id);
+
+  // Rule #1 – no docs → Requires Docs
   if (docs.length === 0) {
     stage = "Requires Docs";
   }
 
-  // Rule #2: any doc rejected -> Requires Docs
+  // Rule #2 – rejected docs → Requires Docs
   if (docs.some((d) => d.status === "rejected")) {
     stage = "Requires Docs";
   }
 
-  // Existing application status → Map to pipeline stage
+  // Map application status → pipeline stage
   switch (app.status) {
     case "review":
       stage = "In Review";
@@ -84,21 +78,34 @@ const buildCardFromApplication = (app: any): PipelineCard => {
 };
 
 /**
- * Build all cards from real applications
+ * Build or sync cards without overwriting user transitions
  */
-const rebuildCards = () => {
-  cards.clear();
+const syncCards = (): void => {
   const apps = applicationService.listApplications();
+
   apps.forEach((app) => {
-    const card = buildCardFromApplication(app);
-    cards.set(app.id, card);
+    const existing = cards.get(app.id);
+
+    if (!existing) {
+      // First time seeing this application → build a new card
+      const card = buildInitialCard(app);
+      cards.set(app.id, card);
+      return;
+    }
+
+    // Card already exists → sync metadata only
+    existing.applicantName = app.applicantName;
+    existing.amount = app.loanAmount ?? existing.amount;
+    existing.updatedAt = app.updatedAt ?? existing.updatedAt;
+    existing.assignedTo = app.assignedTo;
+
+    // DO NOT overwrite stage — user action overrides rules
+    cards.set(app.id, existing);
   });
 };
 
-rebuildCards();
-
 /**
- * Helpers
+ * Helper: require card
  */
 const requireCard = (id: string): PipelineCard => {
   const card = cards.get(id);
@@ -109,15 +116,13 @@ const requireCard = (id: string): PipelineCard => {
 };
 
 /**
- * Return stages + cards
+ * PUBLIC: return all stages with cards
  */
 export const getAllStages = () => {
-  rebuildCards();
+  syncCards();
 
   return PIPELINE_STAGES.map((stage) => {
-    const stageCards = Array.from(cards.values()).filter(
-      (c) => c.stage === stage
-    );
+    const stageCards = Array.from(cards.values()).filter((c) => c.stage === stage);
 
     return {
       id: stage,
@@ -127,40 +132,48 @@ export const getAllStages = () => {
   });
 };
 
+/**
+ * PUBLIC: return all cards
+ */
 export const getAllCards = () => {
-  rebuildCards();
+  syncCards();
   return Array.from(cards.values());
 };
 
 /**
- * Apply transition rules
+ * PUBLIC: Move card
+ * Big Fix rule: moveCard(cardId, newStage)
  */
-export const moveCard = (payload: PipelineTransitionInput) => {
-  const { applicationId, toStage } = payload;
+export const moveCard = (cardId: string, newStage: PipelineStage) => {
+  syncCards();
 
-  const card = requireCard(applicationId);
+  const card = requireCard(cardId);
+
+  if (!PIPELINE_STAGES.includes(newStage)) {
+    throw new Error(`Invalid stage: ${newStage}`);
+  }
 
   const now = new Date().toISOString();
   const previousStage = card.stage;
 
   const updated: PipelineCard = {
     ...card,
-    stage: toStage,
+    stage: newStage,
     updatedAt: now,
   };
 
-  cards.set(applicationId, updated);
+  cards.set(cardId, updated);
 
-  const timelineEntry: TimelineEvent = {
+  const event: TimelineEvent = {
     id: randomUUID(),
-    applicationId,
+    applicationId: card.applicationId,
     fromStage: previousStage,
-    toStage,
+    toStage: newStage,
     createdAt: now,
   };
 
-  const events = history.get(applicationId) ?? [];
-  history.set(applicationId, [...events, timelineEntry]);
+  const events = timeline.get(cardId) ?? [];
+  timeline.set(cardId, [...events, event]);
 
   return updated;
 };
@@ -182,7 +195,7 @@ export const getApplicationData = (applicationId: string) => {
     application: app,
     documents: docs,
     lenderMatches: lenders,
-    timeline: history.get(applicationId) ?? [],
+    timeline: timeline.get(applicationId) ?? [],
   };
 };
 
@@ -201,7 +214,7 @@ export const getApplicationLenders = (_applicationId: string) => {
 };
 
 /**
- * Legacy wrapper
+ * Legacy compatibility
  */
 export class PipelineService {
   public getBoard() {
@@ -211,8 +224,8 @@ export class PipelineService {
     };
   }
 
-  public transitionApplication(input: PipelineTransitionInput) {
-    return { card: moveCard(input) };
+  public transitionApplication(cardId: string, toStage: PipelineStage) {
+    return { card: moveCard(cardId, toStage) };
   }
 }
 
