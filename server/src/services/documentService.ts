@@ -240,6 +240,34 @@ export class DocumentService {
   }
 }
 
+/* Instance & named exports for backward compatibility */
 export const documentService = new DocumentService();
 export const createDocumentService = (): DocumentService => new DocumentService();
 export type DocumentServiceType = DocumentService;
+
+/* Named exports for existing imports */
+export const getDocumentsForApplication = (applicationId: string) =>
+  documentService.listDocuments(applicationId);
+export const getDocumentById = (id: string) =>
+  documentService.getDocument(id);
+export const saveNewDocumentExport = (...args: Parameters<DocumentService['saveNewDocument']>) =>
+  documentService.saveNewDocument(...args);
+export const saveDocumentVersionExport = (...args: Parameters<DocumentService['saveDocumentVersion']>) =>
+  documentService.saveDocumentVersion(...args);
+export const acceptDocumentExport = (id: string) => documentService.acceptDocument(id);
+export const rejectDocumentExport = (id: string) => documentService.rejectDocument(id);
+export const reuploadDocumentExport = (...args: Parameters<DocumentService['uploadDocument']>) =>
+  documentService.uploadDocument(...args);
+export const downloadDocumentExport = (id: string) => documentService.downloadDocument(id);
+export const downloadMultipleDocumentsExport = async (ids: string[]) => {
+  const zip = new JSZip();
+  await Promise.all(
+    ids.map(async (id) => {
+      const buf = await documentService.downloadDocument(id);
+      zip.file(`file-${id}`, buf.buffer);
+    })
+  );
+  return zip.generateAsync({ type: "nodebuffer" });
+};
+export const streamDocumentExport = (id: string, res: Response) =>
+  documentService.streamVersion(id, res);
