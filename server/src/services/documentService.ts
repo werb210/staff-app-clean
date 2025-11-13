@@ -1,3 +1,4 @@
+// server/src/services/documentService.ts
 import { createHash, randomUUID } from "crypto";
 import JSZip from "jszip";
 import type { Response } from "express";
@@ -148,7 +149,7 @@ export const saveDocumentVersion = async (p: {
   buffer: Buffer;
   mimeType: string;
   fileName?: string;
-  category?: string;
+  category?: Document["category"];
 }): Promise<DocumentWithVersions> => {
   const record = requireDoc(p.documentId);
 
@@ -218,7 +219,7 @@ export const reuploadDocument = async (
   buffer: Buffer,
   mimeType: string,
   fileName: string,
-  category?: string
+  category?: Document["category"]
 ): Promise<DocumentWithVersions> => {
   return saveDocumentVersion({
     documentId: id,
@@ -361,5 +362,6 @@ export class DocumentService {
 }
 
 export const documentService = new DocumentService();
-export const createDocumentService = () => new DocumentService();
+export const createDocumentService = (..._args: any[]): DocumentService =>
+  new DocumentService();
 export type DocumentServiceType = DocumentService;
