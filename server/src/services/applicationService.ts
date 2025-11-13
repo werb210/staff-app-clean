@@ -26,7 +26,6 @@ export interface ApplicationServiceOptions {
   seedApplications?: Application[];
 }
 
-/** Error for Portal session lookups */
 export class ApplicationPortalNotFoundError extends Error {
   constructor(identifier: string) {
     super(`No application found for ${identifier}`);
@@ -49,7 +48,6 @@ export class ApplicationService {
     seed.forEach((app) => this.applications.set(app.id, app));
   }
 
-  /** Default seed for demo environment */
   private defaultSeed(now: Date): Application[] {
     const base = {
       createdAt: now.toISOString(),
@@ -86,12 +84,10 @@ export class ApplicationService {
     return [application];
   }
 
-  /** List ALL applications */
   public listApplications(): Application[] {
     return Array.from(this.applications.values());
   }
 
-  /** Private: lookup */
   private findById(id: string): Application | undefined {
     return this.applications.get(id);
   }
@@ -99,11 +95,10 @@ export class ApplicationService {
   private findByEmail(email: string): Application | undefined {
     const normalized = email.trim().toLowerCase();
     return this.listApplications().find(
-      (app) => app.applicantEmail.toLowerCase() === normalized,
+      (app) => app.applicantEmail.toLowerCase() === normalized
     );
   }
 
-  /** Public version for client portal */
   public listPublicApplications(): ApplicationPublic[] {
     return this.listApplications().map((app) =>
       ApplicationPublicSchema.parse({
@@ -116,11 +111,10 @@ export class ApplicationService {
         matchScore: app.matchScore,
         submittedAt: app.submittedAt,
         summary: this.ai.summarizeApplication(app),
-      }),
+      })
     );
   }
 
-  /** Get or create placeholder */
   public getApplication(id: string): Application {
     const existing = this.findById(id);
     if (existing) return existing;
@@ -159,7 +153,6 @@ export class ApplicationService {
     return placeholder;
   }
 
-  /** Create new application */
   public createApplication(input: ApplicationCreateInput): Application {
     const payload = ApplicationCreateSchema.parse(input);
     const now = new Date().toISOString();
@@ -186,10 +179,9 @@ export class ApplicationService {
     return app;
   }
 
-  /** Update application (strict schema) */
   public updateApplication(
     id: string,
-    updates: Omit<ApplicationUpdateInput, "id">,
+    updates: Omit<ApplicationUpdateInput, "id">
   ): Application {
     const current = this.getApplication(id);
 
@@ -205,37 +197,32 @@ export class ApplicationService {
     return updated;
   }
 
-  /** Update stage only */
   public updateStage(id: string, stage: ApplicationStage): Application {
     ApplicationStageSchema.parse(stage);
     return this.updateApplication(id, { stage });
   }
 
-  /** Update status only */
   public updateStatus(id: string, status: ApplicationStatus): Application {
     ApplicationStatusSchema.parse(status);
     return this.updateApplication(id, { status });
   }
 
-  /** Assign application */
   public assignApplication(
     id: string,
     assignedTo: string,
-    stage?: ApplicationStage,
+    stage?: ApplicationStage
   ): Application {
     const patch: Partial<Application> = { assignedTo };
     if (stage) patch.stage = stage;
     return this.updateApplication(id, patch);
   }
 
-  /** Delete application */
   public deleteApplication(id: string): Application {
     const existing = this.getApplication(id);
     this.applications.delete(id);
     return existing;
   }
 
-  /** Submit */
   public submitApplication(id: string, submittedBy: string): Application {
     const now = new Date().toISOString();
     return this.updateApplication(id, {
@@ -246,7 +233,6 @@ export class ApplicationService {
     });
   }
 
-  /** Complete */
   public completeApplication(id: string, completedBy: string): Application {
     return this.updateApplication(id, {
       status: "completed",
@@ -256,8 +242,10 @@ export class ApplicationService {
     });
   }
 
-  /** Publish → returns ApplicationPublic */
-  public publishApplication(id: string, publishedBy: string): ApplicationPublic {
+  public publishApplication(
+    id: string,
+    publishedBy: string
+  ): ApplicationPublic {
     const app = this.updateApplication(id, { status: "approved" });
 
     return ApplicationPublicSchema.parse({
@@ -273,13 +261,12 @@ export class ApplicationService {
     });
   }
 
-  /** Build pipeline board */
+  /** FINAL PIPELINE STAGES — EXACT MATCH WITH YOUR SPEC */
   public buildPipeline() {
     const stages: ApplicationStage[] = [
       "new",
       "requires_docs",
       "in_review",
-      "ready_for_lenders",
       "sent_to_lenders",
       "approved",
       "declined",
@@ -301,16 +288,15 @@ export class ApplicationService {
             : apps.reduce((s, a) => s + (a.score ?? 0), 0) / apps.length,
         lastUpdatedAt: new Date().toISOString(),
         applications: apps.sort((a, b) =>
-          b.updatedAt.localeCompare(a.updatedAt),
+          b.updatedAt.localeCompare(a.updatedAt)
         ),
       };
     });
   }
 
-  /** Resolve application for portal */
   private resolvePortalApplication(
     applicationId?: string,
-    applicantEmail?: string,
+    applicantEmail?: string
   ): Application {
     if (applicationId) {
       const byId = this.findById(applicationId);
@@ -323,14 +309,13 @@ export class ApplicationService {
     }
 
     throw new ApplicationPortalNotFoundError(
-      applicationId ?? applicantEmail ?? "unknown",
+      applicationId ?? applicantEmail ?? "unknown"
     );
   }
 
-  /** Portal session builder */
   private buildPortalSession(
     app: Application,
-    silo: string,
+    silo: string
   ): ClientPortalSession {
     const preferred = app.applicantName.split(" ")[0] || "there";
 
@@ -347,7 +332,6 @@ export class ApplicationService {
     });
   }
 
-  /** Next-step logic for portal */
   private nextStep(stage: ApplicationStage): string {
     switch (stage) {
       case "new":
@@ -356,8 +340,6 @@ export class ApplicationService {
         return "Upload requested documents.";
       case "in_review":
         return "Your application is under review.";
-      case "ready_for_lenders":
-        return "We are preparing your application for lenders.";
       case "sent_to_lenders":
         return "Lenders are reviewing your file.";
       case "approved":
@@ -369,7 +351,6 @@ export class ApplicationService {
     }
   }
 
-  /** Create portal session */
   public createClientPortalSession(options: {
     applicationId?: string;
     applicantEmail?: string;
@@ -377,15 +358,14 @@ export class ApplicationService {
   }): ClientPortalSession {
     const app = this.resolvePortalApplication(
       options.applicationId,
-      options.applicantEmail,
+      options.applicantEmail
     );
     return this.buildPortalSession(app, options.silo);
   }
 
-  /** Get portal session by ID */
   public getClientPortalSession(
     applicationId: string,
-    silo: string,
+    silo: string
   ): ClientPortalSession {
     const app = this.resolvePortalApplication(applicationId, undefined);
     return this.buildPortalSession(app, silo);
@@ -395,5 +375,5 @@ export class ApplicationService {
 export const applicationService = new ApplicationService();
 export type ApplicationServiceType = ApplicationService;
 export const createApplicationService = (
-  options: ApplicationServiceOptions = {},
+  options: ApplicationServiceOptions = {}
 ): ApplicationService => new ApplicationService(options);
