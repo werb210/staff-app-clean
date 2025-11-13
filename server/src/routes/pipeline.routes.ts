@@ -4,44 +4,49 @@ import {
   PipelineTransitionSchema,
   PipelineAssignmentSchema,
 } from "../schemas/pipeline.schema.js";
-import { applicationService } from "../services/applicationService.js";
+
+import { isPlaceholderSilo, respondWithPlaceholder } from "../utils/placeholder.js";
 
 const router = Router();
 
-/**
- * Build and return the full pipeline board.
- * This matches the Staff Pipeline UI.
- */
+/* ---------------------------------------------------------
+   GET: Full Pipeline Board
+--------------------------------------------------------- */
 router.get("/board", (req, res) => {
+  if (isPlaceholderSilo(req)) return respondWithPlaceholder(res);
+
   try {
-    const stages = applicationService.buildPipeline();
+    const stages = req.silo!.services.applications.buildPipeline();
     const board = {
       stages,
       assignments: [],
     };
+
     const parsed = PipelineBoardSchema.parse(board);
-    res.json(parsed);
+    res.json({ message: "OK", data: parsed });
   } catch (err) {
     console.error("Pipeline board error:", err);
     res.status(500).json({ error: "Failed to load pipeline board" });
   }
 });
 
-/**
- * Transition an application between stages.
- */
+/* ---------------------------------------------------------
+   POST: Transition Application Stage
+--------------------------------------------------------- */
 router.post("/transition", (req, res) => {
+  if (isPlaceholderSilo(req)) return respondWithPlaceholder(res);
+
   try {
     const input = PipelineTransitionSchema.parse(req.body);
 
-    const updated = applicationService.updateStatus(
+    const updated = req.silo!.services.applications.updateStage(
       input.applicationId,
-      input.toStage,
+      input.toStage
     );
 
     res.json({
-      ok: true,
-      application: updated,
+      message: "OK",
+      data: updated,
     });
   } catch (err) {
     console.error("Pipeline transition error:", err);
@@ -49,22 +54,24 @@ router.post("/transition", (req, res) => {
   }
 });
 
-/**
- * Assign an application to a staff member.
- */
+/* ---------------------------------------------------------
+   POST: Assign Application to Staff
+--------------------------------------------------------- */
 router.post("/assign", (req, res) => {
+  if (isPlaceholderSilo(req)) return respondWithPlaceholder(res);
+
   try {
     const input = PipelineAssignmentSchema.parse(req.body);
 
-    const updated = applicationService.assignApplication(
+    const updated = req.silo!.services.applications.assignApplication(
       input.id,
       input.assignedTo,
-      input.stage,
+      input.stage
     );
 
     res.json({
-      ok: true,
-      application: updated,
+      message: "OK",
+      data: updated,
     });
   } catch (err) {
     console.error("Pipeline assignment error:", err);
