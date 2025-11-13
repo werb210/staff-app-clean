@@ -107,7 +107,6 @@ const resolveCallerId = (override?: string): string => {
     return slfVoice;
   }
 
-  // Default BF
   if (!bfVoice) throw new Error("BF_VOICE_NUMBER missing");
   return bfVoice;
 };
@@ -197,7 +196,6 @@ export const initiateCall = async (
   const client = getVoiceClient();
 
   if (!client) {
-    // No Twilio configured — return queued state
     record.status = "queued";
     record.updatedAt = new Date().toISOString();
     return {
@@ -234,7 +232,7 @@ export const initiateCall = async (
       sid: twilioCall.sid,
       contactId,
     });
-  } catch (err) {
+  } catch (err: unknown) {
     record.status = "failed";
     record.updatedAt = new Date().toISOString();
     pushTimeline(record.id, contactId, "failed", "Twilio call failed");
@@ -275,7 +273,7 @@ export const endCall = async (callId: string): Promise<CallRecord> => {
     client
       ?.calls(record.providerSid)
       .update({ status: "completed" })
-      .catch((err) => safeLogError("Twilio endCall update failed", err));
+      .catch((err: unknown) => safeLogError("Twilio endCall update failed", err));
   }
 
   return {
