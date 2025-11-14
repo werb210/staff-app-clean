@@ -48,38 +48,17 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan("combined"));
 
 // -----------------------------------------------
-// ROOT ROUTE
+// ROOT ROUTE (fixes Cannot GET /)
 // -----------------------------------------------
 app.get("/", (_req, res) => {
   res.send("Staff API is running");
 });
 
 // -----------------------------------------------
-// HELPERS
-// -----------------------------------------------
-const resolveBuildCommit = () =>
-  process.env.GIT_COMMIT_SHA ??
-  process.env.GITHUB_SHA ??
-  process.env.VERCEL_GIT_COMMIT_SHA ??
-  process.env.COMMIT_HASH ??
-  null;
-
-const summariseSiloTables = (records: Record<Silo, { data: unknown[] }>) =>
-  Object.fromEntries(
-    (Object.entries(records) as [Silo, { data: unknown[] }][]).map(
-      ([silo, table]) => [silo, table.data.length]
-    )
-  );
-
-// -----------------------------------------------
 // INTERNAL HEALTH CHECKS
 // -----------------------------------------------
 app.get("/api/_int/health", (_req, res) => {
-  res.status(200).json({
-    ok: true,
-    time: new Date().toISOString(),
-    service: SERVICE_NAME,
-  });
+  res.status(200).json({ ok: true, service: SERVICE_NAME, time: new Date().toISOString() });
 });
 
 app.get("/api/_int/build", (_req, res) => {
@@ -89,69 +68,12 @@ app.get("/api/_int/build", (_req, res) => {
     version: serverPackageJson.version ?? "0.0.0",
     environment: process.env.NODE_ENV ?? "development",
     node: process.version,
-    commit: resolveBuildCommit(),
     buildTime: process.env.BUILD_TIME ?? new Date().toISOString(),
   });
 });
 
-app.get("/api/_int/db", (_req, res) => {
-  const metadata = describeDatabaseUrl(process.env.DATABASE_URL);
-
-  if (metadata.status !== "ok") {
-    res.status(500).json({
-      ok: false,
-      service: SERVICE_NAME,
-      status: metadata.status,
-      message:
-        metadata.status === "missing"
-          ? "DATABASE_URL is not configured"
-          : "DATABASE_URL is invalid",
-    });
-    return;
-  }
-
-  res.status(200).json({
-    ok: true,
-    service: SERVICE_NAME,
-    connection: {
-      driver: metadata.driver,
-      url: metadata.sanitizedUrl,
-      host: metadata.host,
-      port: metadata.port,
-    },
-    tables: {
-      applications: summariseSiloTables(db.applications),
-      documents: summariseSiloTables(db.documents),
-      lenders: summariseSiloTables(db.lenders),
-      pipeline: summariseSiloTables(db.pipeline),
-      communications: summariseSiloTables(db.communications),
-      notifications: summariseSiloTables(db.notifications),
-      users: db.users.data.length,
-      auditLogs: db.auditLogs.length,
-    },
-  });
-});
-
-app.get("/api/_int/routes", (_req, res) => {
-  res.status(200).json({
-    ok: true,
-    mounted: [
-      "/api/auth",
-      "/api/contacts",
-      "/api/companies",
-      "/api/deals",
-      "/api/:silo/applications",
-      "/api/:silo/lenders",
-      "/api/:silo/pipeline",
-      "/api/:silo/notifications",
-      "/api/documents",
-      "/api/comm",
-    ],
-  });
-});
-
 // -----------------------------------------------
-// MAIN API ROUTER (silo-aware)
+// MAIN API ROUTERS
 // -----------------------------------------------
 app.use("/api/auth", authRouter);
 app.use("/api/contacts", contactsRouter);
