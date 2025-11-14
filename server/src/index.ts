@@ -18,14 +18,13 @@ import pipelineRouter from "./routes/pipeline.js";
 import communicationRouter from "./routes/communication.js";
 import { db, type Silo } from "./services/db.js";
 import { describeDatabaseUrl } from "./utils/env.js";
-import appModule from "./app.js"; // <-- corrected import for main app module
 
 // -----------------------------------------------
 // EXPRESS APP INITIALIZATION
 // -----------------------------------------------
 const app = express();
 const SERVICE_NAME = "staff-backend";
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 
 // -----------------------------------------------
 // REQUIRED ENV VALIDATION
@@ -47,6 +46,13 @@ app.use(compression() as unknown as RequestHandler);
 app.use(bodyParser.json({ limit: "25mb" }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan("combined"));
+
+// -----------------------------------------------
+// ROOT ROUTE (fixed)
+// -----------------------------------------------
+app.get("/", (_req, res) => {
+  res.send("Staff API is running");
+});
 
 // -----------------------------------------------
 // HELPERS
@@ -155,13 +161,6 @@ app.use("/api/pipeline", pipelineRouter);
 app.use("/api/documents", documentsRouter);
 app.use("/api/comm", communicationRouter);
 app.use("/api", apiRouter);
-
-// -----------------------------------------------
-// ROOT ROUTE FIX FOR GITHUB PREVIEW
-// -----------------------------------------------
-app.get("/", (_req, res) => {
-  res.status(200).send("Staff API is running. Use /api endpoints.");
-});
 
 // -----------------------------------------------
 // GLOBAL ERROR HANDLER
