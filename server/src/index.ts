@@ -18,6 +18,7 @@ import pipelineRouter from "./routes/pipeline.js";
 import communicationRouter from "./routes/communication.js";
 import { db, type Silo } from "./services/db.js";
 import { describeDatabaseUrl } from "./utils/env.js";
+import appModule from "./app.js"; // <-- corrected import for main app module
 
 // -----------------------------------------------
 // EXPRESS APP INITIALIZATION
