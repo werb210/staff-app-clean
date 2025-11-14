@@ -3,7 +3,6 @@ import express, {
   type RequestHandler,
   type Request,
   type Response,
-  type NextFunction,
 } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -24,24 +23,23 @@ import documentsRouter from "./routes/documents.js";
 import pipelineRouter from "./routes/pipeline.js";
 import communicationRouter from "./routes/communication.js";
 
-// Local DB
+// Local DB (silo-scoped)
 import { db } from "./services/db.js";
 import { describeDatabaseUrl } from "./utils/env.js";
 
 /* ------------------------------------------------------------------
-   TYPES
+   SAFE READ HELPERS
 ------------------------------------------------------------------- */
 
-interface Table<T> {
-  data: T[];
-}
+const readSiloTable = <T>(table: Record<string, { data: T[] }>) => {
+  return [
+    ...(table.bf?.data ?? []),
+    ...(table.slf?.data ?? []),
+  ];
+};
 
-type SafeTable<T> = Table<T> | undefined;
-
-/** Safely read any in-memory table */
-const readTable = <T>(table: SafeTable<T>): T[] => {
-  if (!table || !Array.isArray(table.data)) return [];
-  return table.data;
+const countSiloTable = (table: Record<string, { data: any[] }>) => {
+  return (table.bf?.data?.length ?? 0) + (table.slf?.data?.length ?? 0);
 };
 
 /* ------------------------------------------------------------------
@@ -57,9 +55,7 @@ const PORT = Number(process.env.PORT || 5000);
 ------------------------------------------------------------------- */
 
 if (!process.env.DATABASE_URL) {
-  console.warn(
-    "⚠️  Warning: DATABASE_URL is not set. Using in-memory database only."
-  );
+  console.warn("⚠️ DATABASE_URL missing — running in memory-only mode.");
 }
 
 /* ------------------------------------------------------------------
@@ -94,15 +90,12 @@ app.get("/api/health", (_req: Request, res: Response) => {
 });
 
 /* ------------------------------------------------------------------
-   PUBLIC APPLICATIONS LIST
+   PUBLIC APPLICATION LIST
 ------------------------------------------------------------------- */
 
 app.get("/api/applications", (_req: Request, res: Response) => {
-  const apps = readTable(db.applications);
-  res.status(200).json({
-    status: "ok",
-    applications: apps,
-  });
+  const apps = readSiloTable(db.applications);
+  res.status(200).json({ ok: true, count: apps.length, applications: apps });
 });
 
 /* ------------------------------------------------------------------
@@ -121,8 +114,8 @@ app.get("/api/_int/build", (_req, res) => {
   res.status(200).json({
     ok: true,
     service: SERVICE_NAME,
-    version: serverPackageJson.version ?? "0.0.0",
-    environment: process.env.NODE_ENV ?? "development",
+    version: serverPackageJson.version,
+    environment: process.env.NODE_ENV,
     node: process.version,
     commit: process.env.GIT_COMMIT_SHA ?? null,
     buildTime: process.env.BUILD_TIME ?? new Date().toISOString(),
@@ -132,28 +125,19 @@ app.get("/api/_int/build", (_req, res) => {
 app.get("/api/_int/db", (_req, res) => {
   const metadata = describeDatabaseUrl(process.env.DATABASE_URL);
 
-  const apps = readTable(db.applications);
-  const docs = readTable(db.documents);
-  const lenders = readTable(db.lenders);
-  const pipeline = readTable(db.pipeline);
-  const comm = readTable(db.communications);
-  const notes = readTable(db.notifications);
-  const users = readTable(db.users);
-  const audit = Array.isArray(db.auditLogs) ? db.auditLogs : [];
-
   res.status(200).json({
     ok: true,
     service: SERVICE_NAME,
     connection: metadata,
     tables: {
-      applications: apps.length,
-      documents: docs.length,
-      lenders: lenders.length,
-      pipeline: pipeline.length,
-      communications: comm.length,
-      notifications: notes.length,
-      users: users.length,
-      auditLogs: audit.length,
+      applications: countSiloTable(db.applications),
+      documents: countSiloTable(db.documents),
+      lenders: countSiloTable(db.lenders),
+      pipeline: countSiloTable(db.pipeline),
+      communications: countSiloTable(db.communications),
+      notifications: countSiloTable(db.notifications),
+      users: db.users.data.length,
+      auditLogs: db.auditLogs.length,
     },
   });
 });
@@ -190,8 +174,6 @@ app.use("/api/deals", dealsRouter);
 app.use("/api/pipeline", pipelineRouter);
 app.use("/api/documents", documentsRouter);
 app.use("/api/comm", communicationRouter);
-
-// Multitenant routes
 app.use("/api", apiRouter);
 
 /* ------------------------------------------------------------------
