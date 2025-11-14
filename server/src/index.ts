@@ -23,23 +23,24 @@ import documentsRouter from "./routes/documents.js";
 import pipelineRouter from "./routes/pipeline.js";
 import communicationRouter from "./routes/communication.js";
 
-// Local DB (silo-scoped)
+// Local DB
 import { db } from "./services/db.js";
 import { describeDatabaseUrl } from "./utils/env.js";
 
 /* ------------------------------------------------------------------
-   SAFE READ HELPERS
+   TYPES
 ------------------------------------------------------------------- */
 
-const readSiloTable = <T>(table: Record<string, { data: T[] }>) => {
-  return [
-    ...(table.bf?.data ?? []),
-    ...(table.slf?.data ?? []),
-  ];
-};
+interface Table<T> {
+  data: T[];
+}
 
-const countSiloTable = (table: Record<string, { data: any[] }>) => {
-  return (table.bf?.data?.length ?? 0) + (table.slf?.data?.length ?? 0);
+type SafeTable<T> = Table<T> | undefined;
+
+/** Safely read any in-memory table */
+const readTable = <T>(table: SafeTable<T>): T[] => {
+  if (!table || !Array.isArray(table.data)) return [];
+  return table.data;
 };
 
 /* ------------------------------------------------------------------
@@ -55,7 +56,9 @@ const PORT = Number(process.env.PORT || 5000);
 ------------------------------------------------------------------- */
 
 if (!process.env.DATABASE_URL) {
-  console.warn("⚠️ DATABASE_URL missing — running in memory-only mode.");
+  console.warn(
+    "⚠️  Warning: DATABASE_URL is not set. Using in-memory database only."
+  );
 }
 
 /* ------------------------------------------------------------------
@@ -90,12 +93,15 @@ app.get("/api/health", (_req: Request, res: Response) => {
 });
 
 /* ------------------------------------------------------------------
-   PUBLIC APPLICATION LIST
+   PUBLIC APPLICATIONS LIST
 ------------------------------------------------------------------- */
 
 app.get("/api/applications", (_req: Request, res: Response) => {
-  const apps = readSiloTable(db.applications);
-  res.status(200).json({ ok: true, count: apps.length, applications: apps });
+  const apps = readTable(db.applications);
+  res.status(200).json({
+    status: "ok",
+    applications: apps,
+  });
 });
 
 /* ------------------------------------------------------------------
@@ -114,8 +120,8 @@ app.get("/api/_int/build", (_req, res) => {
   res.status(200).json({
     ok: true,
     service: SERVICE_NAME,
-    version: serverPackageJson.version,
-    environment: process.env.NODE_ENV,
+    version: serverPackageJson.version ?? "0.0.0",
+    environment: process.env.NODE_ENV ?? "development",
     node: process.version,
     commit: process.env.GIT_COMMIT_SHA ?? null,
     buildTime: process.env.BUILD_TIME ?? new Date().toISOString(),
@@ -125,19 +131,28 @@ app.get("/api/_int/build", (_req, res) => {
 app.get("/api/_int/db", (_req, res) => {
   const metadata = describeDatabaseUrl(process.env.DATABASE_URL);
 
+  const apps = readTable(db.applications);
+  const docs = readTable(db.documents);
+  const lenders = readTable(db.lenders);
+  const pipeline = readTable(db.pipeline);
+  const comm = readTable(db.communications);
+  const notes = readTable(db.notifications);
+  const users = readTable(db.users);
+  const audit = Array.isArray(db.auditLogs) ? db.auditLogs : [];
+
   res.status(200).json({
     ok: true,
     service: SERVICE_NAME,
     connection: metadata,
     tables: {
-      applications: countSiloTable(db.applications),
-      documents: countSiloTable(db.documents),
-      lenders: countSiloTable(db.lenders),
-      pipeline: countSiloTable(db.pipeline),
-      communications: countSiloTable(db.communications),
-      notifications: countSiloTable(db.notifications),
-      users: db.users.data.length,
-      auditLogs: db.auditLogs.length,
+      applications: apps.length,
+      documents: docs.length,
+      lenders: lenders.length,
+      pipeline: pipeline.length,
+      communications: comm.length,
+      notifications: notes.length,
+      users: users.length,
+      auditLogs: audit.length,
     },
   });
 });
@@ -174,6 +189,8 @@ app.use("/api/deals", dealsRouter);
 app.use("/api/pipeline", pipelineRouter);
 app.use("/api/documents", documentsRouter);
 app.use("/api/comm", communicationRouter);
+
+// Multitenant routes
 app.use("/api", apiRouter);
 
 /* ------------------------------------------------------------------
