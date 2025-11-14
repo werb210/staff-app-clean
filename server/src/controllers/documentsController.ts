@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
-import type { Silo } from "../services/db.js";
-import { documentService } from "../services/documentService.js";
+import type { Silo } from "../services/db";
+import { documentService } from "../services/documentService";
+import type { JwtUserPayload } from "../middlewares/auth";
 
 /* -----------------------------------------------------
    LOCAL FALLBACK TYPES
-   (No Multer, no Prisma — prevents TS build errors)
 ----------------------------------------------------- */
 
 interface UploadedFile {
@@ -14,14 +14,9 @@ interface UploadedFile {
   size: number;
 }
 
-interface AuthUser {
-  id: string;
-  role?: string;
-}
-
 interface TypedRequestWithFile extends Request {
   file?: UploadedFile;
-  user?: AuthUser;
+  user?: JwtUserPayload;
 }
 
 /** Convert string → Silo (no validation here) */
@@ -38,7 +33,6 @@ export const uploadDocument = async (
   const silo = asSilo(req.params.silo);
   const appId = req.params.appId;
 
-  // Multer is NOT installed → req.file will always be undefined
   if (!req.file) {
     return res.status(400).json({
       error:
@@ -48,9 +42,9 @@ export const uploadDocument = async (
 
   const doc = await documentService.upload(silo, appId, req.file);
   if (!doc) {
-    return res
-      .status(404)
-      .json({ error: "Application not found or silo blocked" });
+    return res.status(404).json({
+      error: "Application not found or silo blocked",
+    });
   }
 
   return res.status(201).json(doc);
@@ -104,6 +98,7 @@ export const downloadDocumentHandler = async (
     "Content-Disposition",
     `attachment; filename="${file.name}"`
   );
+
   return res.send(file.buffer);
 };
 
@@ -170,5 +165,6 @@ export const downloadAllDocumentsHandler = async (
     "Content-Disposition",
     `attachment; filename="${pack.fileName}"`
   );
+
   return res.send(pack.zipBuffer);
 };
