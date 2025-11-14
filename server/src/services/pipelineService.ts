@@ -1,4 +1,4 @@
-import { db, type Silo } from "./db.js";
+import { db, type Silo } from "./db.ts";
 
 const STAGES = [
   "new",
@@ -18,13 +18,19 @@ export const pipelineService = {
   },
 
   move(silo: Silo, appId: string, { toStage }: { toStage: PipelineStage }) {
-    if (!STAGES.includes(toStage)) throw new Error("Invalid pipeline stage");
+    if (!STAGES.includes(toStage)) {
+      throw new Error("Invalid pipeline stage");
+    }
 
     const list = db.pipeline[silo].data;
     const idx = list.findIndex((c) => c.appId === appId);
 
     if (idx === -1) {
-      const card = { id: db.id(), appId, stage: toStage };
+      const card = {
+        id: db.id(),
+        appId,
+        stage: toStage,
+      };
       list.push(card);
       return card;
     }
