@@ -1,26 +1,14 @@
-import "dotenv/config";
-import express from "express";
-import cors from "cors";
-import bodyParser from "body-parser";
+// app.ts
+// -----------------------------------------------------
+// Minimal express app wrapper used ONLY for testing
+// -----------------------------------------------------
 
-import apiRouter from "./routes/index.js";
-import authRouter from "./routes/auth.js";
+import express from "express";
 
 const app = express();
-const serviceName = "staff-backend";
 
-app.use(cors());
-app.use(bodyParser.json());
-
-app.get("/api/_int/health", (req, res) => {
-  res.json({ ok: true, service: serviceName });
-});
-
-app.use("/api/auth", authRouter);
-app.use("/api", apiRouter);
-
-app.get("/", (_, res) => {
-  res.send("Boreal Staff Backend (Silo mode active)");
-});
+// This file no longer mounts routers or middleware.
+// All real logic exists in src/index.ts.
+// app.ts is now a lightweight test harness only.
 
 export default app;
