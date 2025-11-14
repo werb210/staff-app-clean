@@ -4,7 +4,6 @@ import { authMiddleware, siloGuard } from "../middlewares/index.js";
 import applications from "./applications.routes.js";
 import lenders from "./lenders.routes.js";
 import pipeline from "./pipeline.routes.js";
-import communications from "./communications.routes.js";
 import notifications from "./notifications.routes.js";
 import ai from "./ai.routes.js";
 
@@ -16,7 +15,6 @@ router.use(authMiddleware);
 siloRouter.use("/applications", applications);
 siloRouter.use("/lenders", lenders);
 siloRouter.use("/pipeline", pipeline);
-siloRouter.use("/communications", communications);
 siloRouter.use("/notifications", notifications);
 
 router.use("/:silo", siloGuard, siloRouter);

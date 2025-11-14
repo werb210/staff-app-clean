@@ -14,6 +14,7 @@ import companiesRouter from "./routes/companies.js";
 import dealsRouter from "./routes/deals.js";
 import documentsRouter from "./routes/documents.js";
 import pipelineRouter from "./routes/pipeline.js";
+import communicationRouter from "./routes/communication.js";
 
 // -----------------------------------------------
 // EXPRESS APP INITIALIZATION
@@ -64,9 +65,9 @@ app.get("/api/_int/routes", (_req, res) => {
       "/api/:silo/applications",
       "/api/:silo/lenders",
       "/api/:silo/pipeline",
-      "/api/:silo/communications",
       "/api/:silo/notifications",
       "/api/documents",
+      "/api/comm",
     ],
   });
 });
@@ -80,6 +81,7 @@ app.use("/api/companies", companiesRouter);
 app.use("/api/deals", dealsRouter);
 app.use("/api/pipeline", pipelineRouter);
 app.use("/api/documents", documentsRouter);
+app.use("/api/comm", communicationRouter);
 app.use("/api", apiRouter);
 
 // -----------------------------------------------
