@@ -1,10 +1,10 @@
-// routes/applications.routes.js
+// routes/applications.routes.ts
 // -----------------------------------------------------
 // Silo-scoped application routes
 // Mounted at: /api/:silo/applications
 // -----------------------------------------------------
 
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import {
   getApplications,
   createApplication,
@@ -13,28 +13,34 @@ import {
   deleteApplication,
 } from "../controllers/applicationsController.js";
 
+// Express router with mergeParams so :silo is inherited
 const router = Router({ mergeParams: true });
 
 // -----------------------------------------------------
-// Helper — async wrapper to prevent unhandled rejections
+// Helper — async wrapper with strict TS types
 // -----------------------------------------------------
-const wrap = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
+const wrap =
+  (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
 
 // -----------------------------------------------------
-// Validate appId parameter
+// Validate appId parameter (TypeScript-safe)
 // -----------------------------------------------------
-router.param("appId", (req, res, next, value) => {
-  if (!value || typeof value !== "string" || value.length < 8) {
-    return res.status(400).json({
-      ok: false,
-      error: "Invalid application ID",
-      received: value,
-    });
+router.param(
+  "appId",
+  (req: Request, res: Response, next: NextFunction, value: string) => {
+    if (!value || typeof value !== "string" || value.length < 8) {
+      return res.status(400).json({
+        ok: false,
+        error: "Invalid application ID",
+        received: value,
+      });
+    }
+    next();
   }
-  next();
-});
+);
 
 // -----------------------------------------------------
 // ROUTES
