@@ -1,63 +1,69 @@
 // services/db.js
 // ---------------------------------------------------------
-// Temporary In-Memory DB Layer
-// Matches all controllers and health checks
+// Temporary In-Memory DB Layer (SILO-SCOPED)
+// Fully matches applicationService + controllers
 // ---------------------------------------------------------
 
-// Silo type definition
+import { randomUUID } from "crypto";
+
+// Silo constants (lowercase for auth, uppercase for routing)
 export const Silo = {
   BF: "bf",
   SLF: "slf",
 };
 
 // ---------------------------------------------------------
-// In-memory tables — non-crashing, safe defaults
+// Create one table
 // ---------------------------------------------------------
-
 const createTable = () => ({
   data: [],
-  insert(record) {
-    this.data.push(record);
-    return record;
-  },
-  findById(id) {
-    return this.data.find((r) => r.id === id) || null;
-  },
-  update(id, updates) {
-    const idx = this.data.findIndex((r) => r.id === id);
-    if (idx === -1) return null;
-    this.data[idx] = { ...this.data[idx], ...updates };
-    return this.data[idx];
-  },
-  delete(id) {
-    const idx = this.data.findIndex((r) => r.id === id);
-    if (idx === -1) return false;
-    this.data.splice(idx, 1);
-    return true;
-  },
 });
 
 // ---------------------------------------------------------
-// Database object exposed to server
+// Database object — silo-scoped tables exactly as expected
 // ---------------------------------------------------------
-
 export const db = {
-  applications: createTable(),
-  documents: createTable(),
-  lenders: createTable(),
-  pipeline: createTable(),
-  communications: createTable(),
-  notifications: createTable(),
+  id: () => randomUUID(),
+
+  applications: {
+    bf: createTable(),
+    slf: createTable(),
+  },
+
+  documents: {
+    bf: createTable(),
+    slf: createTable(),
+  },
+
+  lenders: {
+    bf: createTable(),
+    slf: createTable(),
+  },
+
+  pipeline: {
+    bf: createTable(),
+    slf: createTable(),
+  },
+
+  communications: {
+    bf: createTable(),
+    slf: createTable(),
+  },
+
+  notifications: {
+    bf: createTable(),
+    slf: createTable(),
+  },
+
   users: createTable(),
 
-  // audit logs = simple array instead of table
   auditLogs: [],
 };
 
 // ---------------------------------------------------------
-// Example seed admin user (matches authController.js)
+// Seed user
 // ---------------------------------------------------------
-db.users.insert({
+db.users.data.push({
   id: "1",
   email: "todd.w@boreal.financial",
   role: "admin",
@@ -67,15 +73,11 @@ db.users.insert({
 // ---------------------------------------------------------
 // Utility (used by /api/_int/db)
 // ---------------------------------------------------------
-
 export const describeDatabaseUrl = (url) => {
-  if (!url) {
-    return { status: "missing" };
-  }
+  if (!url) return { status: "missing" };
 
   try {
     const u = new URL(url);
-
     return {
       status: "ok",
       driver: u.protocol.replace(":", ""),
@@ -83,7 +85,7 @@ export const describeDatabaseUrl = (url) => {
       host: u.hostname,
       port: u.port,
     };
-  } catch (e) {
+  } catch {
     return { status: "invalid" };
   }
 };
