@@ -13,6 +13,17 @@ enum Silo {
   SLF
 }
 
+enum CommunicationType {
+  SMS
+  CALL
+  EMAIL
+}
+
+enum CommunicationDirection {
+  INBOUND
+  OUTBOUND
+}
+
 enum DocumentStatus {
   pending
   accepted
@@ -29,6 +40,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   applications Application[]
+  communications CommunicationLog[]
 }
 
 model Application {
@@ -98,6 +110,8 @@ model Contact {
   silo      Silo
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  communications CommunicationLog[]
 }
 
 model Company {
@@ -117,4 +131,22 @@ model Deal {
   silo      Silo
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model CommunicationLog {
+  id                String                 @id @default(uuid())
+  type              CommunicationType
+  direction         CommunicationDirection
+  contactId         String
+  contact           Contact                @relation(fields: [contactId], references: [id])
+  silo              Silo
+  messageBody       String?
+  subject           String?
+  providerMessageId String?
+  sentBy            String?
+  user              User?                  @relation(fields: [sentBy], references: [id])
+  createdAt         DateTime               @default(now())
+
+  @@index([contactId, createdAt])
+  @@index([silo, createdAt])
 }
