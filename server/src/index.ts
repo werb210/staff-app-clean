@@ -19,16 +19,10 @@ import communicationRouter from "./routes/communication.js";
 import { db, type Silo } from "./services/db.js";
 import { describeDatabaseUrl } from "./utils/env.js";
 
-// -----------------------------------------------
-// EXPRESS APP INITIALIZATION
-// -----------------------------------------------
 const app = express();
 const SERVICE_NAME = "staff-backend";
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 
-// -----------------------------------------------
-// REQUIRED ENV VALIDATION
-// -----------------------------------------------
 const requiredEnv = ["DATABASE_URL"];
 for (const key of requiredEnv) {
   if (!process.env[key]) {
@@ -37,9 +31,6 @@ for (const key of requiredEnv) {
   }
 }
 
-// -----------------------------------------------
-// GLOBAL MIDDLEWARE
-// -----------------------------------------------
 app.use(cors({ origin: true, credentials: true }));
 app.use(helmet() as unknown as RequestHandler);
 app.use(compression() as unknown as RequestHandler);
@@ -48,38 +39,17 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan("combined"));
 
 // -----------------------------------------------
-// ROOT ROUTE (always first)
+// ROOT ROUTE (must be before wildcard routers)
 // -----------------------------------------------
 app.get("/", (_req, res) => {
   res.status(200).send("Staff API is running");
 });
 
 // -----------------------------------------------
-// HELPERS
-// -----------------------------------------------
-const resolveBuildCommit = () =>
-  process.env.GIT_COMMIT_SHA ??
-  process.env.GITHUB_SHA ??
-  process.env.VERCEL_GIT_COMMIT_SHA ??
-  process.env.COMMIT_HASH ??
-  null;
-
-const summariseSiloTables = (records: Record<Silo, { data: unknown[] }>) =>
-  Object.fromEntries(
-    (Object.entries(records) as [Silo, { data: unknown[] }][]).map(
-      ([silo, table]) => [silo, table.data.length]
-    )
-  );
-
-// -----------------------------------------------
 // INTERNAL HEALTH CHECKS
 // -----------------------------------------------
 app.get("/api/_int/health", (_req, res) => {
-  res.status(200).json({
-    ok: true,
-    time: new Date().toISOString(),
-    service: SERVICE_NAME,
-  });
+  res.status(200).json({ ok: true, time: new Date().toISOString(), service: SERVICE_NAME });
 });
 
 app.get("/api/_int/build", (_req, res) => {
@@ -89,43 +59,32 @@ app.get("/api/_int/build", (_req, res) => {
     version: serverPackageJson.version ?? "0.0.0",
     environment: process.env.NODE_ENV ?? "development",
     node: process.version,
-    commit: resolveBuildCommit(),
     buildTime: process.env.BUILD_TIME ?? new Date().toISOString(),
   });
 });
 
 app.get("/api/_int/db", (_req, res) => {
   const metadata = describeDatabaseUrl(process.env.DATABASE_URL);
-
   if (metadata.status !== "ok") {
     res.status(500).json({
       ok: false,
       service: SERVICE_NAME,
       status: metadata.status,
-      message:
-        metadata.status === "missing"
-          ? "DATABASE_URL is not configured"
-          : "DATABASE_URL is invalid",
+      message: metadata.status === "missing" ? "DATABASE_URL is not configured" : "DATABASE_URL is invalid",
     });
     return;
   }
-
   res.status(200).json({
     ok: true,
     service: SERVICE_NAME,
-    connection: {
-      driver: metadata.driver,
-      url: metadata.sanitizedUrl,
-      host: metadata.host,
-      port: metadata.port,
-    },
+    connection: { driver: metadata.driver, url: metadata.sanitizedUrl, host: metadata.host, port: metadata.port },
     tables: {
-      applications: summariseSiloTables(db.applications),
-      documents: summariseSiloTables(db.documents),
-      lenders: summariseSiloTables(db.lenders),
-      pipeline: summariseSiloTables(db.pipeline),
-      communications: summariseSiloTables(db.communications),
-      notifications: summariseSiloTables(db.notifications),
+      applications: Object.fromEntries(Object.entries(db.applications).map(([silo, table]) => [silo, table.data.length])),
+      documents: Object.fromEntries(Object.entries(db.documents).map(([silo, table]) => [silo, table.data.length])),
+      lenders: Object.fromEntries(Object.entries(db.lenders).map(([silo, table]) => [silo, table.data.length])),
+      pipeline: Object.fromEntries(Object.entries(db.pipeline).map(([silo, table]) => [silo, table.data.length])),
+      communications: Object.fromEntries(Object.entries(db.communications).map(([silo, table]) => [silo, table.data.length])),
+      notifications: Object.fromEntries(Object.entries(db.notifications).map(([silo, table]) => [silo, table.data.length])),
       users: db.users.data.length,
       auditLogs: db.auditLogs.length,
     },
@@ -151,7 +110,7 @@ app.get("/api/_int/routes", (_req, res) => {
 });
 
 // -----------------------------------------------
-// MAIN API ROUTERS
+// MAIN ROUTERS
 // -----------------------------------------------
 app.use("/api/auth", authRouter);
 app.use("/api/contacts", contactsRouter);
