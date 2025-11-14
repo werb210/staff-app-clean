@@ -12,6 +12,7 @@ import authRouter from "./routes/auth.js";
 import contactsRouter from "./routes/contacts.js";
 import companiesRouter from "./routes/companies.js";
 import dealsRouter from "./routes/deals.js";
+import pipelineRouter from "./routes/pipeline.js";
 
 // -----------------------------------------------
 // EXPRESS APP INITIALIZATION
@@ -76,6 +77,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/contacts", contactsRouter);
 app.use("/api/companies", companiesRouter);
 app.use("/api/deals", dealsRouter);
+app.use("/api/pipeline", pipelineRouter);
 app.use("/api", apiRouter);
 
 // -----------------------------------------------
