@@ -16,6 +16,7 @@
     "@azure/storage-blob": "^12.29.1",
     "@prisma/client": "^5.22.0",
     "@sendgrid/mail": "^8.1.6",
+    "@types/multer": "^2.0.0",
     "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
@@ -27,6 +28,7 @@
     "jsonwebtoken": "^9.0.2",
     "jszip": "^3.10.1",
     "morgan": "^1.10.0",
+    "multer": "^2.0.2",
     "twilio": "^5.10.5",
     "zod": "^4.1.12"
   },
