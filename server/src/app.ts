@@ -4,6 +4,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 
 import apiRouter from "./routes/index.js";
+import authRouter from "./routes/auth.js";
 
 const app = express();
 const serviceName = "staff-backend";
@@ -15,6 +16,7 @@ app.get("/api/_int/health", (req, res) => {
   res.json({ ok: true, service: serviceName });
 });
 
+app.use("/api/auth", authRouter);
 app.use("/api", apiRouter);
 
 app.get("/", (_, res) => {
