@@ -8,6 +8,7 @@ import morgan from "morgan";
 
 import { errorHandler } from "./middlewares/errorHandler.js";
 import apiRouter from "./routes/index.js";
+import authRouter from "./routes/auth.js";
 
 // -----------------------------------------------
 // EXPRESS APP INITIALIZATION
@@ -51,6 +52,7 @@ app.get("/api/_int/routes", (_req, res) => {
   res.status(200).json({
     ok: true,
     mounted: [
+      "/api/auth",
       "/api/:silo/applications",
       "/api/:silo/documents",
       "/api/:silo/lenders",
@@ -64,6 +66,7 @@ app.get("/api/_int/routes", (_req, res) => {
 // -----------------------------------------------
 // MAIN API ROUTER (silo-aware)
 // -----------------------------------------------
+app.use("/api/auth", authRouter);
 app.use("/api", apiRouter);
 
 // -----------------------------------------------
