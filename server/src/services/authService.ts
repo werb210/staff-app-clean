@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import { StoredUser } from "../types/user.js";
 
 /**
- * Normalize Prisma user → StoredUser
+ * Convert raw Prisma user → StoredUser
  */
 function mapToStoredUser(user: any): StoredUser {
   return {
@@ -14,7 +14,9 @@ function mapToStoredUser(user: any): StoredUser {
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     passwordHash: user.passwordHash,
-    name: user.name ?? "Unknown User",
+    name: typeof user.name === "string" && user.name.trim().length > 0
+      ? user.name
+      : "Unknown User",
   };
 }
 
@@ -61,7 +63,10 @@ export async function createUser(input: CreateUserInput): Promise<StoredUser> {
       passwordHash,
       role: input.role,
       silos: input.silos,
-      name: input.name ?? "Unknown User",
+      name:
+        typeof input.name === "string" && input.name.trim().length > 0
+          ? input.name.trim()
+          : "Unknown User",
     },
   });
 
