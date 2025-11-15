@@ -1,13 +1,10 @@
-// Unified controller exports for the Staff Server
+// Unified exports for all controllers (TypeScript source)
 
-export * from "./aiController.js";
-export * from "./applicationsController.js";
-export * from "./authController.js";
-export * from "./communicationController.js";
-export * from "./documentsController.js";
-
-// FIX: Correct file name (plural): lendersController.js
-export * from "./lendersController.js";
-
-export * from "./notificationsController.js";
-export * from "./pipelineController.js";
+export * from "./aiController";
+export * from "./applicationsController";
+export * from "./authController";
+export * from "./communicationController";
+export * from "./documentsController";
+export * from "./lendersController";
+export * from "./notificationsController";
+export * from "./pipelineController";
