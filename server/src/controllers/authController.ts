@@ -2,10 +2,13 @@ import { Request, Response } from "express";
 import {
   loginUser,
   getUserById,
-  createUser,
+  createUser as createUserService,
 } from "../services/authService.js";
-import { sanitizeUser } from "../utils/env.js";
+import { sanitizeUser } from "../utils/sanitizeUser.js";
 
+/**
+ * POST /auth/login
+ */
 export async function login(req: Request, res: Response) {
   try {
     const { email, password } = req.body;
@@ -27,16 +30,17 @@ export async function login(req: Request, res: Response) {
   }
 }
 
+/**
+ * GET /auth/me
+ */
 export async function getProfile(req: Request, res: Response) {
   try {
     const userId = (req as any).user?.id;
-
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     const user = await getUserById(userId);
-
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -48,6 +52,9 @@ export async function getProfile(req: Request, res: Response) {
   }
 }
 
+/**
+ * POST /auth/users
+ */
 export async function register(req: Request, res: Response) {
   try {
     const { email, password, role, silos, name } = req.body;
@@ -56,15 +63,15 @@ export async function register(req: Request, res: Response) {
       return res.status(400).json({ error: "Missing email or password" });
     }
 
-    const newUser = await createUser({
+    const user = await createUserService({
       email,
       password,
       role: role || "staff",
       silos: silos || [],
-      name: name || null, // name is optional
+      name: name || "Unnamed User", // REQUIRED by StoredUser type
     });
 
-    return res.status(201).json(sanitizeUser(newUser));
+    return res.status(201).json(sanitizeUser(user));
   } catch (err: any) {
     console.error("Register error:", err);
     return res.status(500).json({ error: "Internal server error" });
