@@ -23,7 +23,18 @@ export async function login(req: Request, res: Response) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    return res.json(sanitizeUser(user));
+    // Always sanitize the user before returning
+    const publicUser = sanitizeUser({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      silos: user.silos,
+      name: user.name ?? "Unnamed User",
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+
+    return res.json(publicUser);
   } catch (err: any) {
     console.error("Login error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -45,7 +56,17 @@ export async function getProfile(req: Request, res: Response) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    return res.json(sanitizeUser(user));
+    const publicUser = sanitizeUser({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      silos: user.silos,
+      name: user.name ?? "Unnamed User",
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+
+    return res.json(publicUser);
   } catch (err: any) {
     console.error("Get profile error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -63,10 +84,10 @@ export async function register(req: Request, res: Response) {
       return res.status(400).json({ error: "Missing email or password" });
     }
 
-    // StoredUser requires: name: string
-    const safeName = typeof name === "string" && name.trim().length > 0
-      ? name.trim()
-      : "Unnamed User";
+    const safeName =
+      typeof name === "string" && name.trim().length > 0
+        ? name.trim()
+        : "Unnamed User";
 
     const newUser = await createUserService({
       email,
@@ -76,7 +97,17 @@ export async function register(req: Request, res: Response) {
       name: safeName,
     });
 
-    return res.status(201).json(sanitizeUser(newUser));
+    const publicUser = sanitizeUser({
+      id: newUser.id,
+      email: newUser.email,
+      role: newUser.role,
+      silos: newUser.silos,
+      name: newUser.name ?? safeName,
+      createdAt: newUser.createdAt,
+      updatedAt: newUser.updatedAt,
+    });
+
+    return res.status(201).json(publicUser);
   } catch (err: any) {
     console.error("Register error:", err);
     return res.status(500).json({ error: "Internal server error" });
