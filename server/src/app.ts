@@ -1,23 +1,23 @@
-import dotenv from "dotenv";
-dotenv.config();
+import express from "express";
+import cors from "cors";
+import bodyParser from "body-parser";
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
-}
+// Unified API router
+import apiRouter from "./routes/index.js";
 
-const env = {
-  NODE_ENV: process.env.NODE_ENV || "development",
-  PORT: process.env.PORT ? Number(process.env.PORT) : 5000,
+const app = express();
 
-  // Database
-  DATABASE_URL: requireEnv("DATABASE_URL"),
+// --- Core Middleware ---
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
 
-  // Auth
-  JWT_SECRET: requireEnv("JWT_SECRET"),
-};
+// --- Mount all API routes ---
+app.use("/api", apiRouter);
 
-export default env;
+// --- Fallback (should never hit if routes work) ---
+app.get("/", (_, res) => {
+  res.status(200).send("Boreal Staff API");
+});
+
+export default app;
