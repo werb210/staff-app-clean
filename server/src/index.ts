@@ -5,9 +5,9 @@ import { fileURLToPath } from "url";
 import cors from "cors";
 import bodyParser from "body-parser";
 
-import appRouter from "./app.js";
 import env from "./utils/env.js";
 import { query } from "./db.js";
+import apiRouter from "./routes/index.js";
 
 // --- ESM dirname fix ---
 const __filename = fileURLToPath(import.meta.url);
@@ -42,16 +42,21 @@ app.get("/api/_int/db", async (_, res) => {
 
 app.get("/api/_int/routes", (_, res) => {
   const routes: any[] = [];
+
   app._router.stack.forEach((middleware: any) => {
-    if (middleware.route) {
-      routes.push(middleware.route.path);
+    if (middleware.route) routes.push(middleware.route.path);
+    if (middleware.name === "router" && middleware.handle.stack) {
+      middleware.handle.stack.forEach((handler: any) => {
+        if (handler.route) routes.push(handler.route.path);
+      });
     }
   });
+
   res.status(200).json({ ok: true, routes });
 });
 
-// --- Mount API ---
-app.use("/api", appRouter);
+// --- Mount unified API router ---
+app.use("/api", apiRouter);
 
 // --- Root fallback ---
 app.get("/", (_, res) => {
@@ -62,3 +67,5 @@ app.get("/", (_, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Staff API running on port ${PORT}`);
 });
+
+export default app;
