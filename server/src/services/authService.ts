@@ -1,22 +1,23 @@
 import prisma from "./prismaClient.js";
 import bcrypt from "bcrypt";
-import { StoredUser } from "../types/user.js";
+import { StoredUser, Silo } from "../types/user.js";
 
 /**
- * Convert raw Prisma user → StoredUser
+ * Normalize Prisma user → StoredUser
  */
-function mapToStoredUser(user: any): StoredUser {
+function mapToStoredUser(record: any): StoredUser {
   return {
-    id: user.id,
-    email: user.email,
-    role: user.role,
-    silos: user.silos || [],
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-    passwordHash: user.passwordHash,
-    name: typeof user.name === "string" && user.name.trim().length > 0
-      ? user.name
-      : "Unknown User",
+    id: record.id,
+    email: record.email,
+    role: record.role,
+    silos: Array.isArray(record.silos) ? record.silos : [],
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+    passwordHash: record.passwordHash,
+    name:
+      typeof record.name === "string" && record.name.trim().length > 0
+        ? record.name.trim()
+        : "Unknown User",
   };
 }
 
@@ -24,40 +25,40 @@ export async function loginUser(
   email: string,
   password: string
 ): Promise<StoredUser | null> {
-  const user = await prisma.user.findUnique({
+  const record = await prisma.user.findUnique({
     where: { email },
   });
 
-  if (!user) return null;
+  if (!record) return null;
 
-  const match = await bcrypt.compare(password, user.passwordHash);
+  const match = await bcrypt.compare(password, record.passwordHash);
   if (!match) return null;
 
-  return mapToStoredUser(user);
+  return mapToStoredUser(record);
 }
 
 export async function getUserById(id: string): Promise<StoredUser | null> {
-  const user = await prisma.user.findUnique({
+  const record = await prisma.user.findUnique({
     where: { id },
   });
 
-  if (!user) return null;
+  if (!record) return null;
 
-  return mapToStoredUser(user);
+  return mapToStoredUser(record);
 }
 
 interface CreateUserInput {
   email: string;
   password: string;
   role: string;
-  silos: any[];
+  silos: Silo[];
   name?: string | null;
 }
 
 export async function createUser(input: CreateUserInput): Promise<StoredUser> {
   const passwordHash = await bcrypt.hash(input.password, 10);
 
-  const user = await prisma.user.create({
+  const record = await prisma.user.create({
     data: {
       email: input.email,
       passwordHash,
@@ -70,7 +71,7 @@ export async function createUser(input: CreateUserInput): Promise<StoredUser> {
     },
   });
 
-  return mapToStoredUser(user);
+  return mapToStoredUser(record);
 }
 
 export default {
