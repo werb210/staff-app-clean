@@ -20,7 +20,7 @@ import pipelineRouter from "./pipeline.routes.js";
 const router = Router();
 
 /**
- * PUBLIC ROUTES
+ * PUBLIC ROUTES (NO AUTH)
  */
 router.use("/auth", authRouter);
 
@@ -30,7 +30,7 @@ router.use("/auth", authRouter);
 router.use(authMiddleware);
 
 /**
- * TOP-LEVEL ROUTES (NO SILO REQUIRED)
+ * TOP-LEVEL ROUTES (NO SILO)
  */
 router.use("/ai", aiRouter);
 router.use("/applications", applicationsRouter);
@@ -44,17 +44,14 @@ router.use("/notifications", notificationsRouter);
 router.use("/pipeline", pipelineRouter);
 
 /**
- * SILO ROUTES (SLF / BF)
- *
- * Example:
- *   /slf/applications
- *   /bf/documents
+ * SILO ROUTES (BF / SLF)
+ * Mounted exactly once — no duplicates.
  */
-router.use("/:silo", siloGuard, applicationsRouter);
-router.use("/:silo", siloGuard, documentsRouter);
-router.use("/:silo", siloGuard, pipelineRouter);
-router.use("/:silo", siloGuard, lendersRouter);
-router.use("/:silo", siloGuard, notificationsRouter);
-router.use("/:silo", siloGuard, communicationRouter);
+router.use("/:silo/applications", siloGuard, applicationsRouter);
+router.use("/:silo/documents", siloGuard, documentsRouter);
+router.use("/:silo/pipeline", siloGuard, pipelineRouter);
+router.use("/:silo/lenders", siloGuard, lendersRouter);
+router.use("/:silo/notifications", siloGuard, notificationsRouter);
+router.use("/:silo/communication", siloGuard, communicationRouter);
 
 export default router;
