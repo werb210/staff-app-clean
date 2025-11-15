@@ -1,21 +1,21 @@
 import { Router } from "express";
 
 // Middleware
-import authMiddleware from "../middlewares/auth.js";
-import siloGuard from "../middlewares/siloGuard.js";
+import authMiddleware from "../middlewares/auth";
+import siloGuard from "../middlewares/siloGuard";
 
-// Routers (all valid, all using .js)
-import aiRouter from "./ai.routes.js";
-import applicationsRouter from "./applications.routes.js";
-import authRouter from "./auth.js";
-import communicationRouter from "./communication.js";
-import companiesRouter from "./companies.js";
-import contactsRouter from "./contacts.js";
-import dealsRouter from "./deals.js";
-import documentsRouter from "./documents.js";
-import lendersRouter from "./lenders.routes.js";
-import notificationsRouter from "./notifications.routes.js";
-import pipelineRouter from "./pipeline.routes.js"; // correct modern pipeline router
+// Routers (all valid, all using .ts internally)
+import aiRouter from "./ai.routes";
+import applicationsRouter from "./applications.routes";
+import authRouter from "./auth";
+import communicationRouter from "./communication";
+import companiesRouter from "./companies";
+import contactsRouter from "./contacts";
+import dealsRouter from "./deals";
+import documentsRouter from "./documents";
+import lendersRouter from "./lenders.routes";
+import notificationsRouter from "./notifications.routes";
+import pipelineRouter from "./pipeline.routes"; // correct modern pipeline router
 
 const router = Router();
 
