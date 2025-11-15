@@ -4,6 +4,7 @@ import {
   getUserById,
   createUser as createUserService,
 } from "../services/authService.js";
+
 import { sanitizeUser } from "../utils/sanitizeUser.js";
 
 /**
@@ -18,7 +19,6 @@ export async function login(req: Request, res: Response) {
     }
 
     const user = await loginUser(email, password);
-
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
@@ -63,15 +63,20 @@ export async function register(req: Request, res: Response) {
       return res.status(400).json({ error: "Missing email or password" });
     }
 
-    const user = await createUserService({
+    // StoredUser requires: name: string
+    const safeName = typeof name === "string" && name.trim().length > 0
+      ? name.trim()
+      : "Unnamed User";
+
+    const newUser = await createUserService({
       email,
       password,
       role: role || "staff",
       silos: silos || [],
-      name: name || "Unnamed User", // REQUIRED by StoredUser type
+      name: safeName,
     });
 
-    return res.status(201).json(sanitizeUser(user));
+    return res.status(201).json(sanitizeUser(newUser));
   } catch (err: any) {
     console.error("Register error:", err);
     return res.status(500).json({ error: "Internal server error" });
