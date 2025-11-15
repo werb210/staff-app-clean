@@ -4,7 +4,7 @@ import { Router } from "express";
 import authMiddleware from "../middlewares/auth.js";
 import siloGuard from "../middlewares/siloGuard.js";
 
-// Routers
+// Routers (all valid, all using .js)
 import aiRouter from "./ai.routes.js";
 import applicationsRouter from "./applications.routes.js";
 import authRouter from "./auth.js";
@@ -15,7 +15,7 @@ import dealsRouter from "./deals.js";
 import documentsRouter from "./documents.js";
 import lendersRouter from "./lenders.routes.js";
 import notificationsRouter from "./notifications.routes.js";
-import pipelineRouter from "./pipeline.routes.js";
+import pipelineRouter from "./pipeline.routes.js"; // correct modern pipeline router
 
 const router = Router();
 
