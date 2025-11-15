@@ -2,6 +2,22 @@ import prisma from "./prismaClient.js";
 import bcrypt from "bcrypt";
 import { StoredUser } from "../types/user.js";
 
+/**
+ * Normalize Prisma user → StoredUser
+ */
+function mapToStoredUser(user: any): StoredUser {
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    silos: user.silos || [],
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    passwordHash: user.passwordHash,
+    name: user.name ?? "Unknown User",
+  };
+}
+
 export async function loginUser(
   email: string,
   password: string
@@ -15,16 +31,7 @@ export async function loginUser(
   const match = await bcrypt.compare(password, user.passwordHash);
   if (!match) return null;
 
-  return {
-    id: user.id,
-    email: user.email,
-    role: user.role,
-    silos: user.silos || [],
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-    passwordHash: user.passwordHash,
-    name: user.name ?? null,
-  };
+  return mapToStoredUser(user);
 }
 
 export async function getUserById(id: string): Promise<StoredUser | null> {
@@ -34,16 +41,7 @@ export async function getUserById(id: string): Promise<StoredUser | null> {
 
   if (!user) return null;
 
-  return {
-    id: user.id,
-    email: user.email,
-    role: user.role,
-    silos: user.silos || [],
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-    passwordHash: user.passwordHash,
-    name: user.name ?? null,
-  };
+  return mapToStoredUser(user);
 }
 
 interface CreateUserInput {
@@ -63,20 +61,11 @@ export async function createUser(input: CreateUserInput): Promise<StoredUser> {
       passwordHash,
       role: input.role,
       silos: input.silos,
-      name: input.name ?? null,
+      name: input.name ?? "Unknown User",
     },
   });
 
-  return {
-    id: user.id,
-    email: user.email,
-    role: user.role,
-    silos: user.silos || [],
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-    passwordHash: user.passwordHash,
-    name: user.name ?? null,
-  };
+  return mapToStoredUser(user);
 }
 
 export default {
