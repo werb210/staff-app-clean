@@ -1,5 +1,10 @@
 // Unified exports for all controllers (TypeScript source)
 
+// IMPORTANT:
+// Do NOT add .js extensions here.
+// Your build pipeline (tsc + Node16 resolution) will correctly
+// rewrite these to .js in dist/ during compilation.
+
 export * from "./aiController";
 export * from "./applicationsController";
 export * from "./authController";
