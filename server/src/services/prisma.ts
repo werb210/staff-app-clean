@@ -1,4 +1,10 @@
 import { db } from "../db.js";
+import type {
+  AuditLogRecord,
+  CreateUserData,
+  UpdateUserData,
+  UserRecord,
+} from "./db.js";
 import type { Silo } from "../types/index.js";
 
 export type { Silo } from "../types/index.js";
@@ -22,19 +28,27 @@ export function requireUserSiloAccess(userSilos: Silo[], targetSilo: Silo) {
 
 export const prisma = {
   auditLog: {
-    async create({ data }: { data: any }) {
-      const record = { id: db.id(), ...data, createdAt: new Date().toISOString() };
+    async create({ data }: { data: Omit<AuditLogRecord, "id" | "createdAt"> }) {
+      const record: AuditLogRecord = {
+        id: db.id(),
+        ...data,
+        createdAt: new Date().toISOString(),
+      };
       db.auditLogs.push(record);
       return record;
     },
   },
   user: {
-    async create({ data }: { data: any }): Promise<any> {
-      const record = { id: db.id(), ...data, createdAt: new Date().toISOString() };
+    async create({ data }: { data: CreateUserData }): Promise<UserRecord> {
+      const record: UserRecord = {
+        id: db.id(),
+        ...data,
+        createdAt: new Date().toISOString(),
+      };
       db.users.data.push(record);
       return record;
     },
-    async findUnique({ where }: { where: { id: string } }): Promise<any | null> {
+    async findUnique({ where }: { where: { id: string } }): Promise<UserRecord | null> {
       return db.users.data.find((u) => u.id === where.id) ?? null;
     },
     async update({
@@ -42,8 +56,8 @@ export const prisma = {
       data,
     }: {
       where: { id: string };
-      data: any;
-    }): Promise<any> {
+      data: UpdateUserData;
+    }): Promise<UserRecord> {
       const idx = db.users.data.findIndex((u) => u.id === where.id);
       if (idx === -1) throw new Error("User not found");
       db.users.data[idx] = { ...db.users.data[idx], ...data };

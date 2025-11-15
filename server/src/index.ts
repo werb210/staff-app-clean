@@ -26,20 +26,45 @@ import apiRouter, {
 
 // In-memory DB (NodeNext requires .js extensions)
 import { db } from "./services/index.js";
+import type { Table } from "./services/db.js";
 import { describeDatabaseUrl } from "./utils/env.js";
 
 /* -----------------------------------------------------
    SAFE TABLE ACCESSOR
 ----------------------------------------------------- */
 
-const getTableCount = (table: any): number => {
-  if (!table || !Array.isArray(table.data)) return 0;
-  return table.data.length;
+const toTableArray = <T>(
+  tableOrTables: Table<T> | Table<T>[] | null | undefined
+): Table<T>[] => {
+  if (!tableOrTables) {
+    return [];
+  }
+
+  return Array.isArray(tableOrTables) ? tableOrTables : [tableOrTables];
 };
 
-const getTableRows = (table: any): any[] => {
-  if (!table || !Array.isArray(table.data)) return [];
-  return table.data;
+const getTableCount = <T>(
+  tableOrTables: Table<T> | Table<T>[] | null | undefined
+): number => {
+  return toTableArray(tableOrTables).reduce((count, table) => {
+    if (!Array.isArray(table.data)) {
+      return count;
+    }
+
+    return count + table.data.length;
+  }, 0);
+};
+
+const getTableRows = <T>(
+  tableOrTables: Table<T> | Table<T>[] | null | undefined
+): T[] => {
+  return toTableArray(tableOrTables).flatMap((table) => {
+    if (!Array.isArray(table.data)) {
+      return [];
+    }
+
+    return table.data;
+  });
 };
 
 /* -----------------------------------------------------
@@ -96,7 +121,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 ----------------------------------------------------- */
 
 app.get("/api/applications", (_req: Request, res: Response) => {
-  const apps = getTableRows(db.applications);
+  const apps = getTableRows(Object.values(db.applications));
   res.status(200).json({
     status: "ok",
     applications: apps,
@@ -134,14 +159,14 @@ app.get("/api/_int/db", (_req, res) => {
     service: SERVICE_NAME,
     connection: metadata,
     tables: {
-      applications: getTableCount(db.applications),
-      documents: getTableCount(db.documents),
-      lenders: getTableCount(db.lenders),
-      pipeline: getTableCount(db.pipeline),
-      communications: getTableCount(db.communications),
-      notifications: getTableCount(db.notifications),
+      applications: getTableCount(Object.values(db.applications)),
+      documents: getTableCount(Object.values(db.documents)),
+      lenders: getTableCount(Object.values(db.lenders)),
+      pipeline: getTableCount(Object.values(db.pipeline)),
+      communications: getTableCount(Object.values(db.communications)),
+      notifications: getTableCount(Object.values(db.notifications)),
       users: getTableCount(db.users),
-      auditLogs: Array.isArray(db.auditLogs) ? db.auditLogs.length : 0,
+      auditLogs: db.auditLogs.length,
     },
   });
 });

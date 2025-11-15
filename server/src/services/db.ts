@@ -5,6 +5,7 @@ import type {
   DocumentRecord,
   PipelineRecord,
   Silo,
+  User,
 } from "../types/index.js";
 
 export type { ApplicationRecord, DocumentRecord, PipelineRecord, Silo } from "../types/index.js";
@@ -39,9 +40,25 @@ export interface NotificationRecord {
   createdAt: Date;
 }
 
-interface Table<T> {
+export interface Table<T> {
   data: T[];
 }
+
+export interface AuditLogRecord {
+  id: string;
+  userId: string | null;
+  message: string;
+  silo: Silo;
+  createdAt: string;
+}
+
+export interface UserRecord extends User {
+  createdAt: string;
+}
+
+export type CreateUserData = Omit<UserRecord, "id" | "createdAt">;
+
+export type UpdateUserData = Partial<Omit<UserRecord, "id" | "createdAt">>;
 
 class InMemoryDB {
   applications: Record<Silo, Table<ApplicationRecord>> = {
@@ -86,9 +103,9 @@ class InMemoryDB {
     SLF: { data: [] },
   };
 
-  users: Table<any> = { data: [] };
+  users: Table<UserRecord> = { data: [] };
 
-  auditLogs: unknown[] = [];
+  auditLogs: AuditLogRecord[] = [];
 
   id(): string {
     return randomUUID();

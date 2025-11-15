@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 
 import { AllSilos } from "../silos/siloTypes.js";
 import { prisma } from "../services/index.js";
-import type { Silo } from "../types/index.js";
+import type { Silo, JwtUserPayload } from "../types/index.js";
 
 /**
  * Silo Enforcement Middleware
@@ -30,8 +30,6 @@ export async function siloMiddleware(
       return res.status(401).json({ error: "Invalid user" });
     }
 
-    const typedUser = user as { silos?: Silo[]; id: string };
-
     const siloHeader = req.headers["x-silo"];
 
     if (!siloHeader || typeof siloHeader !== "string") {
@@ -46,8 +44,8 @@ export async function siloMiddleware(
       return res.status(400).json({ error: "Invalid silo header" });
     }
 
-    const userSilos = Array.isArray(typedUser.silos)
-      ? (typedUser.silos as Silo[])
+    const userSilos: Silo[] = Array.isArray(user.silos)
+      ? user.silos
       : [];
 
     if (!userSilos.includes(silo)) {
@@ -56,8 +54,14 @@ export async function siloMiddleware(
         .json({ error: `Access denied. User does not belong to silo ${silo}.` });
     }
 
-    (req as any).silo = silo;
-    (req as any).user = typedUser;
+    req.silo = silo;
+    const requestUser: JwtUserPayload = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      silos: userSilos,
+    };
+    req.user = requestUser;
 
     return next();
   } catch (err) {

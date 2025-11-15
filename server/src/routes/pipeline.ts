@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { requireAuth } from "../auth/authMiddleware.js";
 import { pipelineService } from "../services/index.js";
 import type { Silo } from "../types/index.js";
@@ -8,13 +8,15 @@ const toSilos = (value: unknown): Silo[] => {
   return value.map((item) => item as Silo);
 };
 
+const getRequestSilos = (req: Request): Silo[] => toSilos(req.user?.silos);
+
 const router = Router();
 
 /* ---------------------------------------------------------
    GET ALL APPLICATIONS (for the user's silos only)
 --------------------------------------------------------- */
 router.get("/", requireAuth, (req, res) => {
-  const silos = toSilos((req as any).user?.silos);
+  const silos = getRequestSilos(req);
 
   const records = silos.flatMap((silo) =>
     pipelineService.list(silo).map((record) => ({ ...record, silo }))
@@ -27,7 +29,7 @@ router.get("/", requireAuth, (req, res) => {
    GET SINGLE APPLICATION (silo-locked)
 --------------------------------------------------------- */
 router.get("/:id", requireAuth, (req, res) => {
-  const silos = toSilos((req as any).user?.silos);
+  const silos = getRequestSilos(req);
   const id = req.params.id;
 
   for (const silo of silos) {
@@ -44,7 +46,7 @@ router.get("/:id", requireAuth, (req, res) => {
    MOVE APPLICATION TO A NEW STAGE
 --------------------------------------------------------- */
 router.post("/:id/move", requireAuth, (req, res) => {
-  const silos = toSilos((req as any).user?.silos);
+  const silos = getRequestSilos(req);
   const id = req.params.id;
   const { stage } = req.body ?? {};
 
