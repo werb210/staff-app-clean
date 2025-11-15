@@ -23,8 +23,15 @@ export async function login(req: Request, res: Response) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // user is StoredUser → safe to sanitize directly
-    return res.json(sanitizeUser(user));
+    const ensuredUser = {
+      ...user,
+      name:
+        typeof user.name === "string" && user.name.trim().length > 0
+          ? user.name.trim()
+          : "Unknown User",
+    };
+
+    return res.json(sanitizeUser(ensuredUser));
   } catch (err: any) {
     console.error("Login error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -46,7 +53,15 @@ export async function getProfile(req: Request, res: Response) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    return res.json(sanitizeUser(user));
+    const ensuredUser = {
+      ...user,
+      name:
+        typeof user.name === "string" && user.name.trim().length > 0
+          ? user.name.trim()
+          : "Unknown User",
+    };
+
+    return res.json(sanitizeUser(ensuredUser));
   } catch (err: any) {
     console.error("Get profile error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -67,7 +82,7 @@ export async function register(req: Request, res: Response) {
     const safeName =
       typeof name === "string" && name.trim().length > 0
         ? name.trim()
-        : "Unnamed User";
+        : "Unknown User";
 
     const newUser = await createUserService({
       email,
@@ -77,7 +92,12 @@ export async function register(req: Request, res: Response) {
       name: safeName,
     });
 
-    return res.status(201).json(sanitizeUser(newUser));
+    const ensuredUser = {
+      ...newUser,
+      name: safeName,
+    };
+
+    return res.status(201).json(sanitizeUser(ensuredUser));
   } catch (err: any) {
     console.error("Register error:", err);
     return res.status(500).json({ error: "Internal server error" });
