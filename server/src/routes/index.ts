@@ -1,5 +1,3 @@
-// server/src/routes/index.ts
-
 import { Router } from "express";
 import healthRouter from "./health.routes.js";
 import applicationsRouter from "./applications.routes.js";
@@ -13,25 +11,17 @@ import siloGuard from "../middlewares/siloGuard.js";
 
 const router = Router();
 
-// -------------------------------------------------------------
-// PUBLIC ROUTES (must stay FIRST, and must NOT match /:silo)
-// -------------------------------------------------------------
+// PUBLIC ROUTES — must be FIRST
 router.use("/health", healthRouter);
 router.use("/ai", aiRouter);
 
-// -------------------------------------------------------------
-// PROTECTED ROUTES (auth required)
-// -------------------------------------------------------------
-router.use(authMiddleware);
+// PROTECTED ROUTES
+router.use("/applications", authMiddleware, applicationsRouter);
+router.use("/documents", authMiddleware, documentsRouter);
+router.use("/lenders", authMiddleware, lendersRouter);
+router.use("/notifications", authMiddleware, notificationsRouter);
 
-router.use("/applications", applicationsRouter);
-router.use("/documents", documentsRouter);
-router.use("/lenders", lendersRouter);
-router.use("/notifications", notificationsRouter);
-
-// -------------------------------------------------------------
-// SILO ROUTES — MUST BE LAST (to prevent catching /health)
-// -------------------------------------------------------------
-router.use("/:silo/applications", siloGuard, applicationsRouter);
+// SILO ROUTES — MUST BE LAST
+router.use("/:silo", authMiddleware, siloGuard, applicationsRouter);
 
 export default router;
