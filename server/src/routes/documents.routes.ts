@@ -1,11 +1,12 @@
 // server/src/routes/documents.routes.ts
+
 import { Router } from "express";
-import multer from "multer";
 import { documentsController } from "../controllers/documentsController.js";
 
 const router = Router();
-const upload = multer();
 
-router.post("/upload", upload.single("file"), documentsController.upload);
+router.get("/", documentsController.list);
+router.post("/", documentsController.upload);
+router.get("/:id", documentsController.getById);
 
 export default router;
