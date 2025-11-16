@@ -10,8 +10,10 @@ export function errorHandler(
 ) {
   console.error("❌ ERROR:", err);
 
-  res.status(500).json({
+  res.status(err.status || 500).json({
     ok: false,
-    error: typeof err === "string" ? err : err.message || "Internal Error",
+    error: err.message || "Internal Server Error",
   });
 }
+
+export default errorHandler;
