@@ -11,9 +11,11 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
 
-    // --- Azure-required layout ---
+    "allowJs": false,
+    "noEmit": false,
+
     "rootDir": "src",
-    "outDir": "dist/server/src"
+    "outDir": "dist"
   },
 
   "include": ["src/**/*"],
