@@ -13,11 +13,15 @@ import siloGuard from "../middlewares/siloGuard.js";
 
 const router = Router();
 
-// PUBLIC ROUTES
+// -------------------------------------------------------------
+// PUBLIC ROUTES (must stay FIRST, and must NOT match /:silo)
+// -------------------------------------------------------------
 router.use("/health", healthRouter);
 router.use("/ai", aiRouter);
 
-// PROTECTED ROUTES
+// -------------------------------------------------------------
+// PROTECTED ROUTES (auth required)
+// -------------------------------------------------------------
 router.use(authMiddleware);
 
 router.use("/applications", applicationsRouter);
@@ -25,7 +29,9 @@ router.use("/documents", documentsRouter);
 router.use("/lenders", lendersRouter);
 router.use("/notifications", notificationsRouter);
 
-// SILO ROUTES
-router.use("/:silo", siloGuard, applicationsRouter);
+// -------------------------------------------------------------
+// SILO ROUTES — MUST BE LAST (to prevent catching /health)
+// -------------------------------------------------------------
+router.use("/:silo/applications", siloGuard, applicationsRouter);
 
 export default router;
