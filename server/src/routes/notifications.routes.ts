@@ -1,12 +1,10 @@
-// server/src/controllers/notificationsController.ts
+// server/src/routes/notifications.routes.ts
 
-import type { Request, Response } from "express";
-import notificationsService from "../services/notificationsService.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { Router } from "express";
+import { notificationsController } from "../controllers/notificationsController.js";
 
-export const notificationsController = {
-  list: asyncHandler(async (_req: Request, res: Response) => {
-    const data = await notificationsService.list();
-    res.json({ ok: true, data });
-  }),
-};
+const router = Router();
+
+router.get("/", notificationsController.list);
+
+export default router;
