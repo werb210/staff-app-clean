@@ -1,8 +1,12 @@
 // server/src/types/express.d.ts
 import "express";
 
-declare module "express" {
+declare module "express-serve-static-core" {
   interface Request {
-    user?: any;
+    user?: {
+      id: string;
+      email: string;
+      role: string;
+    };
   }
 }
