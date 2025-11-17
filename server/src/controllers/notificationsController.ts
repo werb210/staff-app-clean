@@ -1,5 +1,4 @@
 // server/src/controllers/notificationsController.ts
-
 import type { Request, Response } from "express";
 import notificationsService from "../services/notificationsService.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
