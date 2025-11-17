@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 
+// Add TS support for req.silo
 declare module "express-serve-static-core" {
   interface Request {
     silo?: string;
@@ -7,8 +8,14 @@ declare module "express-serve-static-core" {
 }
 
 export const siloGuard = (req: Request, _res: Response, next: NextFunction) => {
-  const header = req.headers["x-silo"];
-  const silo = typeof header === "string" ? header : undefined;
+  const silo = req.params.silo;
+
+  if (!silo) {
+    return next(new Error("Silo missing from route."));
+  }
+
   req.silo = silo;
   next();
 };
+
+export default siloGuard;
