@@ -18,13 +18,18 @@ export const pool = new Pool({
 export const db = drizzle(pool);
 
 /**
- * EXPORT REGISTRY OBJECT
- * Your services expect this EXACT shape:
- *   import { registry } from "../db/registry.js"
+ * ------------------------------------------------------------------
+ * REGISTRY EXPORT
+ * ------------------------------------------------------------------
+ * Your service files do:
+ *   import { registry } from "../db/registry.js";
  *
- * Since you removed the actual model definitions,
- * we provide stable empty objects to satisfy imports.
+ * Those imports require this named export to exist.
+ * Until real model objects are wired up, we export
+ * stable empty objects so TypeScript and Node are happy.
+ * ------------------------------------------------------------------
  */
+
 export const registry = {
   applications: {},
   companies: {},
