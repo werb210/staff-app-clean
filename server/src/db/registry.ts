@@ -18,18 +18,13 @@ export const pool = new Pool({
 export const db = drizzle(pool);
 
 /**
- * --------------------------------------------------------------------
- * REGISTRY EXPORT
- * --------------------------------------------------------------------
- * The services expect this EXACT object:
- *    { applications, companies, deals, lenders }
+ * EXPORT REGISTRY OBJECT
+ * Your services expect this EXACT shape:
+ *   import { registry } from "../db/registry.js"
  *
- * Your repo currently has NO model files inside server/src/db/models/.
- * To keep the build working, we provide safe empty objects so TS stops
- * throwing “no exported member 'registry'”.
- * --------------------------------------------------------------------
+ * Since you removed the actual model definitions,
+ * we provide stable empty objects to satisfy imports.
  */
-
 export const registry = {
   applications: {},
   companies: {},
