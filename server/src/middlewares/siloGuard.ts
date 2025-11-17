@@ -1,13 +1,17 @@
-// server/src/db/registry.ts
+// server/src/middlewares/siloGuard.ts
+import type { Request, Response, NextFunction } from "express";
 
-import pkg from "pg";
-const { Pool } = pkg;
+declare module "express-serve-static-core" {
+  interface Request {
+    silo?: string;
+  }
+}
 
-import { env } from "../utils/env.js";
+export const siloGuard = (req: Request, _res: Response, next: NextFunction) => {
+  const header = req.headers["x-silo"];
 
-export const pool = new Pool({
-  connectionString: env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+  const silo = typeof header === "string" ? header : undefined;
+  req.silo = silo;
+
+  next();
+};
