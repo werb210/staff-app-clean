@@ -1,5 +1,3 @@
-// server/src/routes/index.ts
-
 import { Router } from "express";
 
 import healthRouter from "./health.routes.js";
@@ -14,27 +12,17 @@ import siloGuard from "../middlewares/siloGuard.js";
 
 const router = Router();
 
-/**
- * IMPORTANT:
- * PUBLIC ROUTES MUST COME FIRST
- * These should NEVER require Authorization headers.
- */
+// PUBLIC
 router.use("/health", healthRouter);
 router.use("/ai", aiRouter);
 
-/**
- * PROTECTED ROUTES
- * All require auth token.
- */
+// PROTECTED
 router.use("/applications", authMiddleware, applicationsRouter);
 router.use("/documents", authMiddleware, documentsRouter);
 router.use("/lenders", authMiddleware, lendersRouter);
 router.use("/notifications", authMiddleware, notificationsRouter);
 
-/**
- * SILO ROUTES — must ALWAYS be last
- * Example: /bf/applications, /slf/applications
- */
+// SILO ROUTES — MUST BE LAST
 router.use("/:silo", authMiddleware, siloGuard, applicationsRouter);
 
 export default router;
