@@ -1,24 +1,26 @@
-// server/src/middlewares/authMiddleware.ts
-import type { Request, Response, NextFunction } from "express";
+// server/src/middleware/authMiddleware.ts
+import { Request, Response, NextFunction } from "express";
+import { verifyToken } from "../utils/jwt.js";
 
-export default function authMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export function auth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
+  if (!header) return res.status(401).json({ ok: false, error: "Missing auth header" });
 
-  if (!header) {
-    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  const token = header.replace("Bearer ", "").trim();
+
+  try {
+    const decoded = verifyToken(token);
+    req.user = decoded;
+    next();
+  } catch {
+    res.status(401).json({ ok: false, error: "Invalid token" });
   }
+}
 
-  const [scheme, token] = header.split(" ");
-
-  if (scheme !== "Bearer" || !token) {
-    return res.status(401).json({ ok: false, error: "Invalid token format" });
-  }
-
-  (req as any).user = { token };
-
-  return next();
+export function requireRole(role: string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user || req.user.role !== role)
+      return res.status(403).json({ ok: false, error: "Forbidden" });
+    next();
+  };
 }
