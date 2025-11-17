@@ -1,16 +1,28 @@
-// server/src/index.ts
 import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
-// Azure/NodeNext safe import
-import app from "./app.js";
+import router from "./routes/index.js";
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-try {
-  app.listen(PORT, () => {
-    console.log(`🚀 Staff API running on port ${PORT}`);
-  });
-} catch (err) {
-  console.error("❌ Failed to start Staff API:", err);
-  process.exit(1);
-}
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// MOUNT API ROUTES
+app.use("/api", router);
+
+// ROOT PING
+app.get("/", (_, res) => {
+  res.json({ ok: true, message: "Staff API root reached" });
+});
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Staff API running on port ${PORT}`);
+});
