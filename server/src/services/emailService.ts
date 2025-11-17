@@ -1,4 +1,5 @@
 // server/src/services/emailService.ts
+import crypto from "crypto";
 
 export const emailService = {
   async list() {
@@ -8,7 +9,6 @@ export const emailService = {
   },
 
   async send(to: string, subject: string, body: string) {
-    // TODO: integrate SendGrid later
     return {
       ok: true,
       id: crypto.randomUUID(),
