@@ -1,20 +1,27 @@
 // server/src/db/schema/pipeline.ts
+import { pgTable, uuid, varchar, timestamp } from "drizzle-orm/pg-core";
+import { applications } from "./applications";
+import { users } from "./users";
 
-export interface PipelineCard {
-  id: string;
-  applicationId: string;
+export const pipeline = pgTable("pipeline", {
+  id: uuid("id").primaryKey().defaultRandom(),
 
-  stage:
-    | "New"
-    | "Requires Docs"
-    | "In Review"
-    | "Docs Complete"
-    | "Lender Review"
-    | "Complete"
-    | "Declined";
+  applicationId: uuid("application_id")
+    .references(() => applications.id)
+    .notNull(),
 
-  assignedTo: string | null;  // staff user ID
+  stage: varchar("stage", { length: 100 })
+    .$type<
+      | "new"
+      | "in_review"
+      | "requires_docs"
+      | "docs_received"
+      | "lender_review"
+      | "approved"
+      | "declined"
+    >(),
 
-  createdAt: Date;
-  updatedAt: Date;
-}
+  assignedTo: uuid("assigned_to").references(() => users.id),
+
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
