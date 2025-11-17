@@ -1,7 +1,6 @@
-// server/src/db/schema/pipeline.ts
 import { pgTable, uuid, varchar, timestamp } from "drizzle-orm/pg-core";
-import { applications } from "./applications";
-import { users } from "./users";
+import { applications } from "./applications.js";
+import { users } from "./users.js";
 
 export const pipeline = pgTable("pipeline", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -10,18 +9,9 @@ export const pipeline = pgTable("pipeline", {
     .references(() => applications.id)
     .notNull(),
 
-  stage: varchar("stage", { length: 100 })
-    .$type<
-      | "new"
-      | "in_review"
-      | "requires_docs"
-      | "docs_received"
-      | "lender_review"
-      | "approved"
-      | "declined"
-    >(),
+  stage: varchar("stage", { length: 100 }).notNull(),
 
   assignedTo: uuid("assigned_to").references(() => users.id),
 
-  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
 });
