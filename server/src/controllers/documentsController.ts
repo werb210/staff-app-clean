@@ -1,31 +1,38 @@
-// server/src/controllers/documentsController.ts
-import { Request, Response } from "express";
-import { documentsService } from "../services/documentsService.js";
+// server/src/controllers/documentController.ts
+import { db } from "../db/registry.js";
+import { documents } from "../db/schema/documents.js";
+import { eq } from "drizzle-orm";
 
-export const documentsController = {
-  async list(req: Request, res: Response) {
-    const docs = await documentsService.list();
-    res.json({ ok: true, data: docs });
+export const documentController = {
+  async list(_req, res) {
+    const rows = await db.select().from(documents);
+    res.json({ ok: true, data: rows });
   },
 
-  async get(req: Request, res: Response) {
-    const doc = await documentsService.get(req.params.id);
-    if (!doc) return res.status(404).json({ ok: false, error: "Not found" });
-    res.json({ ok: true, data: doc });
+  async get(req, res) {
+    const row = await db.query.documents.findFirst({
+      where: eq(documents.id, req.params.id),
+    });
+    if (!row) return res.status(404).json({ ok: false });
+    res.json({ ok: true, data: row });
   },
 
-  async create(req: Request, res: Response) {
-    const doc = await documentsService.create(req.body);
-    res.json({ ok: true, data: doc });
+  async create(req, res) {
+    const inserted = await db.insert(documents).values(req.body).returning();
+    res.json({ ok: true, data: inserted[0] });
   },
 
-  async update(req: Request, res: Response) {
-    const doc = await documentsService.update(req.params.id, req.body);
-    res.json({ ok: true, data: doc });
+  async update(req, res) {
+    const updated = await db
+      .update(documents)
+      .set(req.body)
+      .where(eq(documents.id, req.params.id))
+      .returning();
+    res.json({ ok: true, data: updated[0] });
   },
 
-  async remove(req: Request, res: Response) {
-    await documentsService.remove(req.params.id);
+  async remove(req, res) {
+    await db.delete(documents).where(eq(documents.id, req.params.id));
     res.json({ ok: true });
   },
 };
