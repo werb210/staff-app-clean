@@ -1,6 +1,5 @@
-// server/src/middlewares/errorHandler.ts
-
-import type { Request, Response, NextFunction } from "express";
+// server/src/middleware/errorHandler.ts
+import { Request, Response, NextFunction } from "express";
 
 export function errorHandler(
   err: any,
@@ -8,12 +7,6 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ) {
-  console.error("❌ ERROR:", err);
-
-  res.status(err.status || 500).json({
-    ok: false,
-    error: err.message || "Internal Server Error",
-  });
+  console.error("🚨 ERROR:", err);
+  res.status(500).json({ ok: false, error: "Internal server error" });
 }
-
-export default errorHandler;
