@@ -1,16 +1,13 @@
-import { pgTable, uuid, varchar, timestamp, integer } from "drizzle-orm/pg-core";
-import { applications } from "./applications.js";
+// server/src/db/schema/documents.ts
+import { pgTable, varchar, text, timestamp } from "drizzle-orm/pg-core";
 
 export const documents = pgTable("documents", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  applicationId: uuid("application_id").references(() => applications.id).notNull(),
-
-  name: varchar("name", { length: 255 }).notNull(),
-  category: varchar("category", { length: 100 }).notNull(),
-  mimeType: varchar("mime_type", { length: 100 }).notNull(),
-  sizeBytes: integer("size_bytes").notNull(),
-  storagePath: varchar("storage_path", { length: 500 }).notNull(),
-
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
+  id: varchar("id").primaryKey(),
+  applicationId: varchar("application_id").notNull(),
+  name: varchar("name").notNull(),
+  category: varchar("category").notNull(),
+  mimeType: varchar("mime_type").notNull(),
+  size: varchar("size").notNull(),
+  blobPath: varchar("blob_path").notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow()
 });
