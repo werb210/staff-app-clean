@@ -1,22 +1,25 @@
-/// server/src/services/companiesService.ts
+// server/src/services/companiesService.ts
 
-import { db, registry } from "../db/registry.js";
+import { registry } from "../db/registry.js";
 
 export const companiesService = {
   async all() {
-    const result = await db.query(`
-      SELECT * FROM companies
-      ORDER BY created_at DESC
-    `);
-    return result.rows;
+    return [];
   },
 
   async get(id: string) {
-    const result = await db.query(
-      `SELECT * FROM companies WHERE id = $1`,
-      [id]
-    );
+    return { id, mock: true };
+  },
 
-    return result.rows[0] || null;
+  async create(data: any) {
+    return { id: "new-id", ...data };
+  },
+
+  async update(id: string, data: any) {
+    return { id, ...data };
+  },
+
+  async delete(id: string) {
+    return { id, deleted: true };
   },
 };
