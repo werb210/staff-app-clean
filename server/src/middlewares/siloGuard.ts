@@ -2,16 +2,22 @@
 
 import type { Request, Response, NextFunction } from "express";
 
+const ALLOWED_SILOS = ["bf", "slf"];
+
 export default function siloGuard(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  const silo = req.params.silo;
+  const silo = req.params.silo?.toLowerCase();
 
-  if (!["bf", "slf"].includes(silo.toLowerCase())) {
-    return res.status(400).json({ ok: false, error: "Invalid silo" });
+  if (!silo || !ALLOWED_SILOS.includes(silo)) {
+    return res
+      .status(400)
+      .json({ ok: false, error: `Invalid silo '${silo}'. Allowed: bf, slf.` });
   }
 
-  next();
+  req.silo = silo;
+
+  return next();
 }
