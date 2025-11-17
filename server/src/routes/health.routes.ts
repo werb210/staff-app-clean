@@ -1,13 +1,15 @@
+// server/src/routes/health.routes.ts
+
 import { Router } from "express";
 
 const router = Router();
 
 router.get("/", (_, res) => {
-  res.json({ ok: true, ts: Date.now() });
-});
-
-router.get("/ping", (_, res) => {
-  res.json({ ok: true, msg: "pong" });
+  res.status(200).json({
+    ok: true,
+    status: "healthy",
+    ts: Date.now(),
+  });
 });
 
 export default router;
