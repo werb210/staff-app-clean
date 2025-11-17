@@ -1,3 +1,5 @@
+// server/src/db/schema/index.ts
+
 export * from "./applications.js";
 export * from "./documents.js";
 export * from "./lenders.js";
