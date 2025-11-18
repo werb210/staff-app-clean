@@ -1,88 +1,100 @@
 // ============================================================================
 // server/src/services/userTokenService.ts
-// Unified service rewrite (BLOCK 17)
+// BLOCK 24 — Complete Prisma rewrite
 // ============================================================================
 
-import db from "../db/index.js";
 import crypto from "crypto";
-
-/**
- * Generate secure random token
- */
-function generateToken() {
-  return crypto.randomBytes(48).toString("hex");
-}
+import db from "../db/index.js";
 
 const userTokenService = {
   /**
-   * Create a new token for a user
-   * @param {string} userId
-   * @param {"auth" | "password_reset" | "verify"} type
-   * @param {number} ttlMinutes
+   * Create a verification or reset token for a user
+   * Types: "EMAIL_VERIFY" | "PASSWORD_RESET" | "MFA"
    */
-  async create(userId, type, ttlMinutes = 30) {
-    const token = generateToken();
-    const expiresAt = new Date(Date.now() + ttlMinutes * 60_000);
+  async createToken(
+    userId: string,
+    type: "EMAIL_VERIFY" | "PASSWORD_RESET" | "MFA",
+    expiresInMinutes = 30
+  ) {
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + expiresInMinutes * 60_000);
 
-    return db.userToken.create({
+    await db.userToken.create({
       data: {
+        userId,
         token,
         type,
-        userId,
         expiresAt,
-        consumed: false,
-      },
-      select: {
-        token: true,
-        expiresAt: true,
-        type: true,
       },
     });
+
+    return token;
   },
 
   /**
-   * Validate token (must exist, not expired, not consumed)
-   * @param {string} token
+   * Validate a token (must exist, match type, not expired)
    */
-  async validate(token) {
-    const record = await db.userToken.findUnique({
-      where: { token },
+  async validateToken(
+    token: string,
+    type: "EMAIL_VERIFY" | "PASSWORD_RESET" | "MFA"
+  ) {
+    const record = await db.userToken.findFirst({
+      where: {
+        token,
+        type,
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            isActive: true,
+          },
+        },
+      },
     });
-
-    if (!record) throw new Error("Invalid token");
-    if (record.consumed) throw new Error("Token already used");
-    if (record.expiresAt < new Date()) throw new Error("Token expired");
 
     return record;
   },
 
   /**
-   * Consume token so it cannot be reused
-   * @param {string} token
+   * Mark token as used (soft invalidation)
    */
-  async consume(token) {
-    const record = await db.userToken.findUnique({ where: { token } });
-    if (!record) throw new Error("Invalid token");
-
+  async consumeToken(tokenId: string) {
     return db.userToken.update({
-      where: { token },
-      data: { consumed: true },
+      where: { id: tokenId },
+      data: {
+        expiresAt: new Date(0), // force expired
+      },
     });
   },
 
   /**
-   * Purge expired tokens (safe scheduled task)
+   * Delete a specific token
    */
-  async purgeExpired() {
-    const now = new Date();
-    const result = await db.userToken.deleteMany({
-      where: { expiresAt: { lt: now } },
+  async deleteToken(tokenId: string) {
+    return db.userToken.delete({
+      where: { id: tokenId },
     });
+  },
 
-    return {
-      purged: result.count,
-      timestamp: now.toISOString(),
-    };
+  /**
+   * Delete all tokens for a user (logout from all devices, clear resets, etc.)
+   */
+  async purgeUserTokens(userId: string) {
+    return db.userToken.deleteMany({
+      where: { userId },
+    });
+  },
+
+  /**
+   * Cleanup expired tokens (recommended cron)
+   */
+  async cleanupExpiredTokens() {
+    return db.userToken.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    });
   },
 };
 
