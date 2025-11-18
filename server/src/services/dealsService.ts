@@ -1,12 +1,36 @@
-// server/src/services/dealsService.ts
-import { registry } from "../db/registry.js";
+import { prisma } from "../db/prisma.js";
+import { v4 as uuid } from "uuid";
 
 export const dealsService = {
-  async all() {
-    return []; // placeholder until real queries exist
+  list() {
+    return prisma.deal.findMany({ include: { application: true } });
   },
 
-  async get(id: string) {
-    return null; // placeholder until real queries exist
+  get(id: string) {
+    return prisma.deal.findUnique({
+      where: { id },
+      include: { application: true },
+    });
+  },
+
+  create(data: any) {
+    return prisma.deal.create({
+      data: {
+        id: uuid(),
+        applicationId: data.applicationId,
+        lenderId: data.lenderId,
+        status: data.status,
+        offerAmount: data.offerAmount,
+        terms: data.terms,
+      },
+    });
+  },
+
+  update(id: string, data: any) {
+    return prisma.deal.update({ where: { id }, data });
+  },
+
+  remove(id: string) {
+    return prisma.deal.delete({ where: { id } });
   },
 };
