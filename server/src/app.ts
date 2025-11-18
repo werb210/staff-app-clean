@@ -4,6 +4,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 
 import applicationsRoutes from "./routes/applications.routes.js";
+import ocrRoutes from "./routes/ocr.routes.js";
 
 export const app = express();
 
@@ -12,6 +13,7 @@ app.use(bodyParser.json());
 
 // ROUTES
 app.use("/api/applications", applicationsRoutes);
+app.use("/api/ocr", ocrRoutes);
 
 // ROOT HEALTH CHECK
 app.get("/", (_req, res) => {
