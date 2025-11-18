@@ -4,18 +4,11 @@ import jwt from "jsonwebtoken";
 import { env } from "../utils/env.js";
 
 export const userService = {
-  async create(data: { email: string; password: string; role: string }) {
-    const hashed = await bcrypt.hash(data.password, 10);
-    return prisma.user.create({
-      data: { email: data.email, password: hashed, role: data.role },
-    });
-  },
-
   async authenticate(email: string, password: string) {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return null;
 
-    const valid = await bcrypt.compare(password, user.password);
+    const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) return null;
 
     const token = jwt.sign(
@@ -24,7 +17,21 @@ export const userService = {
       { expiresIn: "7d" }
     );
 
-    return { user, token };
+    return { token, user };
+  },
+
+  async create(data: any) {
+    const hash = await bcrypt.hash(data.password, 10);
+
+    return prisma.user.create({
+      data: {
+        email: data.email,
+        passwordHash: hash,
+        role: data.role ?? "staff",
+        firstName: data.firstName,
+        lastName: data.lastName,
+      },
+    });
   },
 
   list() {
