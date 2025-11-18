@@ -1,36 +1,23 @@
+// FILE: server/src/controllers/contactsController.ts
 import { Request, Response } from "express";
-import { prisma } from "../db/prisma.js";
+import contactsService from "../services/contactsService.js";
 
-export const documentsController = {
-  async list(req: Request, res: Response) {
-    const items = await prisma.document.findMany();
-    res.json(items);
-  },
+export const getAllContacts = async (_req: Request, res: Response) => {
+  res.json(await contactsService.getAllContacts());
+};
 
-  async get(req: Request, res: Response) {
-    const { id } = req.params;
-    const item = await prisma.document.findUnique({ where: { id } });
-    if (!item) return res.status(404).json({ error: "Not found" });
-    res.json(item);
-  },
+export const getContactById = async (req: Request, res: Response) => {
+  const c = await contactsService.getContactById(req.params.id);
+  if (!c) return res.status(404).json({ error: "Not found" });
+  res.json(c);
+};
 
-  async create(req: Request, res: Response) {
-    const created = await prisma.document.create({ data: req.body });
-    res.json(created);
-  },
+export const createContact = async (req: Request, res: Response) => {
+  res.status(201).json(await contactsService.createContact(req.body));
+};
 
-  async update(req: Request, res: Response) {
-    const { id } = req.params;
-    const updated = await prisma.document.update({
-      where: { id },
-      data: req.body,
-    });
-    res.json(updated);
-  },
-
-  async remove(req: Request, res: Response) {
-    const { id } = req.params;
-    await prisma.document.delete({ where: { id } });
-    res.json({ success: true });
-  },
+export default {
+  getAllContacts,
+  getContactById,
+  createContact,
 };
