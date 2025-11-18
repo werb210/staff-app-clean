@@ -1,16 +1,23 @@
-// server/src/controllers/dealsController.ts
-import type { Request, Response } from "express";
 import { dealsService } from "../services/dealsService.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
 
 export const dealsController = {
-  all: asyncHandler(async (_req: Request, res: Response) => {
-    res.json({ ok: true, data: await dealsService.all() });
-  }),
+  list: async (_req, res) => {
+    res.json(await dealsService.list());
+  },
 
-  get: asyncHandler(async (req: Request, res: Response) => {
-    const row = await dealsService.get(req.params.id);
-    if (!row) return res.status(404).json({ ok: false, error: "Not found" });
-    res.json({ ok: true, data: row });
-  }),
+  get: async (req, res) => {
+    res.json(await dealsService.get(req.params.id));
+  },
+
+  create: async (req, res) => {
+    res.json(await dealsService.create(req.body));
+  },
+
+  update: async (req, res) => {
+    res.json(await dealsService.update(req.params.id, req.body));
+  },
+
+  remove: async (req, res) => {
+    res.json(await dealsService.remove(req.params.id));
+  },
 };
