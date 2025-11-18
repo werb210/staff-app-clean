@@ -1,40 +1,37 @@
+// FILE: server/src/controllers/applicationsController.ts
 import { Request, Response } from "express";
-import { prisma } from "../db/prisma.js";
+import applicationsService from "../services/applicationsService.js";
 
-export const applicationsController = {
-  async list(req: Request, res: Response) {
-    const apps = await prisma.application.findMany({
-      include: { company: true, contacts: true, documents: true },
-    });
-    res.json(apps);
-  },
+export const getAllApplications = async (_req: Request, res: Response) => {
+  const apps = await applicationsService.getAllApplications();
+  res.json(apps);
+};
 
-  async get(req: Request, res: Response) {
-    const { id } = req.params;
-    const app = await prisma.application.findUnique({
-      where: { id },
-      include: { company: true, contacts: true, documents: true },
-    });
-    if (!app) return res.status(404).json({ error: "Not found" });
-    res.json(app);
-  },
+export const getApplicationById = async (req: Request, res: Response) => {
+  const app = await applicationsService.getApplicationById(req.params.id);
+  if (!app) return res.status(404).json({ error: "Not found" });
+  res.json(app);
+};
 
-  async create(req: Request, res: Response) {
-    const data = req.body;
-    const created = await prisma.application.create({ data });
-    res.json(created);
-  },
+export const createApplication = async (req: Request, res: Response) => {
+  const created = await applicationsService.createApplication(req.body);
+  res.status(201).json(created);
+};
 
-  async update(req: Request, res: Response) {
-    const { id } = req.params;
-    const data = req.body;
-    const updated = await prisma.application.update({ where: { id }, data });
-    res.json(updated);
-  },
+export const updateApplication = async (req: Request, res: Response) => {
+  const updated = await applicationsService.updateApplication(req.params.id, req.body);
+  res.json(updated);
+};
 
-  async remove(req: Request, res: Response) {
-    const { id } = req.params;
-    await prisma.application.delete({ where: { id } });
-    res.json({ success: true });
-  },
+export const deleteApplication = async (req: Request, res: Response) => {
+  await applicationsService.deleteApplication(req.params.id);
+  res.status(204).end();
+};
+
+export default {
+  getAllApplications,
+  getApplicationById,
+  createApplication,
+  updateApplication,
+  deleteApplication,
 };
