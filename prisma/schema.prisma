@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -15,7 +13,7 @@ model User {
   password  String
   firstName String
   lastName  String
-  role      String   // admin, staff, lender, referrer
+  role      String
   phone     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -79,14 +77,14 @@ model Product {
 }
 
 model Lender {
-  id          String   @id @default(uuid())
-  name        String
-  website     String?
-  email       String?
-  phone       String?
-  country     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  website   String?
+  email     String?
+  phone     String?
+  country   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   products Product[]
 }
