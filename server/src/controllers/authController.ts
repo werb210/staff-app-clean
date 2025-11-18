@@ -1,12 +1,16 @@
-// server/src/controllers/authController.ts
-import type { Request, Response } from "express";
-import { authService } from "../services/authService.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { userService } from "../services/userService.js";
 
 export const authController = {
-  login: asyncHandler(async (req: Request, res: Response) => {
+  login: async (req, res) => {
     const { email, password } = req.body;
-    const result = await authService.login(email, password);
+    const result = await userService.authenticate(email, password);
+
+    if (!result) return res.status(401).json({ error: "Invalid credentials" });
+
     res.json(result);
-  }),
+  },
+
+  register: async (req, res) => {
+    res.json(await userService.create(req.body));
+  },
 };
