@@ -1,31 +1,24 @@
 // server/src/controllers/applicationsController.ts
-import { Request, Response } from "express";
 import { applicationsService } from "../services/applicationsService.js";
 
 export const applicationsController = {
-  async list(req: Request, res: Response) {
-    const apps = await applicationsService.list();
-    res.json({ ok: true, data: apps });
+  async list(req, res) {
+    res.json(await applicationsService.list());
   },
 
-  async get(req: Request, res: Response) {
-    const row = await applicationsService.get(req.params.id);
-    if (!row) return res.status(404).json({ ok: false, error: "Not found" });
-    res.json({ ok: true, data: row });
+  async get(req, res) {
+    res.json(await applicationsService.get(req.params.id));
   },
 
-  async create(req: Request, res: Response) {
-    const row = await applicationsService.create(req.body);
-    res.json({ ok: true, data: row });
+  async create(req, res) {
+    res.json(await applicationsService.create(req.body));
   },
 
-  async update(req: Request, res: Response) {
-    const row = await applicationsService.update(req.params.id, req.body);
-    res.json({ ok: true, data: row });
+  async update(req, res) {
+    res.json(await applicationsService.update(req.params.id, req.body));
   },
 
-  async remove(req: Request, res: Response) {
-    await applicationsService.remove(req.params.id);
-    res.json({ ok: true });
+  async remove(req, res) {
+    res.json(await applicationsService.delete(req.params.id));
   },
 };
