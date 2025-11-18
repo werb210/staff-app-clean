@@ -1,10 +1,23 @@
-// server/src/services/documentService.ts
-import { azureBlob } from "./azureBlob.js";
+import { prisma } from "../db/prisma.js";
 
 export const documentService = {
-  async upload(buffer: Buffer, filename: string) {
-    const key = `docs/${Date.now()}-${filename}`;
-    const uploaded = await azureBlob.upload(buffer, key);
-    return uploaded;
+  list() {
+    return prisma.document.findMany();
+  },
+
+  get(id: string) {
+    return prisma.document.findUnique({ where: { id } });
+  },
+
+  create(data: any) {
+    return prisma.document.create({ data });
+  },
+
+  update(id: string, data: any) {
+    return prisma.document.update({ where: { id }, data });
+  },
+
+  remove(id: string) {
+    return prisma.document.delete({ where: { id } });
   },
 };
