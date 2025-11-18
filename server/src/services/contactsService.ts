@@ -1,34 +1,27 @@
-import { prisma } from "../db/prisma.js";
-import { v4 as uuid } from "uuid";
+// server/src/services/contactsService.ts
+import { prisma } from "../db/index.js";
 
 export const contactsService = {
   list() {
-    return prisma.contact.findMany();
+    return prisma.contact.findMany({ include: { company: true, user: true } });
   },
 
-  get(id: string) {
-    return prisma.contact.findUnique({ where: { id } });
-  },
-
-  create(data: any) {
-    return prisma.contact.create({
-      data: {
-        id: uuid(),
-        companyId: data.companyId,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phone: data.phone,
-        role: data.role,
-      },
+  get(id) {
+    return prisma.contact.findUnique({
+      where: { id },
+      include: { company: true, user: true },
     });
   },
 
-  update(id: string, data: any) {
+  create(data) {
+    return prisma.contact.create({ data });
+  },
+
+  update(id, data) {
     return prisma.contact.update({ where: { id }, data });
   },
 
-  remove(id: string) {
+  delete(id) {
     return prisma.contact.delete({ where: { id } });
   },
 };
