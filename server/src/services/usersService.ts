@@ -1,47 +1,45 @@
-// server/src/services/usersService.ts
-import { db } from "../db/registry.js";
-import { users } from "../db/schema/users.js";
-import { eq } from "drizzle-orm";
-import { v4 as uuid } from "uuid";
+import { prisma } from "../db/prisma.js";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { env } from "../utils/env.js";
 
-export const usersService = {
-  async list() {
-    return db.select().from(users);
-  },
-
-  async get(id: string) {
-    const rows = await db.select().from(users).where(eq(users.id, id));
-    return rows[0] ?? null;
-  },
-
-  async create(data: any) {
-    const id = uuid();
+export const userService = {
+  async create(data: { email: string; password: string; role: string }) {
     const hashed = await bcrypt.hash(data.password, 10);
-
-    await db.insert(users).values({
-      id,
-      email: data.email,
-      passwordHash: hashed,
-      role: data.role ?? "staff",
+    return prisma.user.create({
+      data: { email: data.email, password: hashed, role: data.role },
     });
-
-    return this.get(id);
   },
 
-  async update(id: string, data: any) {
-    let patch = { ...data };
+  async authenticate(email: string, password: string) {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return null;
 
-    if (data.password) {
-      patch.passwordHash = await bcrypt.hash(data.password, 10);
-      delete patch.password;
-    }
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return null;
 
-    await db.update(users).set(patch).where(eq(users.id, id));
-    return this.get(id);
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      env.jwtSecret,
+      { expiresIn: "7d" }
+    );
+
+    return { user, token };
   },
 
-  async remove(id: string) {
-    await db.delete(users).where(eq(users.id, id));
+  list() {
+    return prisma.user.findMany();
+  },
+
+  get(id: string) {
+    return prisma.user.findUnique({ where: { id } });
+  },
+
+  update(id: string, data: any) {
+    return prisma.user.update({ where: { id }, data });
+  },
+
+  remove(id: string) {
+    return prisma.user.delete({ where: { id } });
   },
 };
