@@ -1,23 +1,24 @@
-import { userService } from "../services/userService.js";
+// server/src/controllers/usersController.ts
+import { usersService } from "../services/usersService.js";
 
-export const userController = {
-  list: async (_req, res) => {
-    res.json(await userService.list());
+export const usersController = {
+  async list(req, res) {
+    res.json(await usersService.list());
   },
 
-  get: async (req, res) => {
-    res.json(await userService.get(req.params.id));
+  async get(req, res) {
+    res.json(await usersService.get(req.params.id));
   },
 
-  create: async (req, res) => {
-    res.json(await userService.create(req.body));
+  async create(req, res) {
+    res.json(await usersService.create(req.body));
   },
 
-  update: async (req, res) => {
-    res.json(await userService.update(req.params.id, req.body));
+  async update(req, res) {
+    res.json(await usersService.update(req.params.id, req.body));
   },
 
-  remove: async (req, res) => {
-    res.json(await userService.remove(req.params.id));
+  async remove(req, res) {
+    res.json(await usersService.delete(req.params.id));
   },
 };
