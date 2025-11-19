@@ -2,7 +2,7 @@
   "name": "staff-server",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev": "tsx watch server/src/index.ts",
     "build": "tsc -p tsconfig.build.json",
