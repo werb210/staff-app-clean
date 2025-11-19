@@ -23,17 +23,17 @@ jobs:
       - name: Build server
         run: npm run build
 
-      - name: Prepare deploy folder
+      - name: Create deploy folder
         run: |
           rm -rf deploy
           mkdir deploy
 
-          # Copy only what Azure needs
           cp -R dist deploy/dist
+          cp -R node_modules deploy/node_modules
           cp package.json deploy/
           cp package-lock.json deploy/
 
-      - name: Zip deploy folder
+      - name: Zip deploy
         run: |
           cd deploy
           zip -r ../release.zip .
@@ -54,7 +54,7 @@ jobs:
         with:
           name: release
 
-      - name: Deploy to Azure Web App
+      - name: Deploy to Azure
         uses: azure/webapps-deploy@v3
         with:
           app-name: boreal-staff-server
