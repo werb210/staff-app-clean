@@ -1,41 +1,29 @@
+truncate -s 0 server/src/controllers/productsController.ts
+
+cat > server/src/controllers/productsController.ts << 'EOF'
 // server/src/controllers/productsController.ts
 import type { Request, Response } from "express";
 
-// Temporary stub controller now that Drizzle has been removed.
-// These endpoints just return 501 until Prisma-based versions are wired up.
+// After removing Drizzle, this controller is temporarily disabled.
 export const productController = {
   async list(_req: Request, res: Response) {
-    res.status(501).json({
-      ok: false,
-      error: "Products list endpoint not implemented. Drizzle has been removed.",
-    });
+    res.status(501).json({ ok: false, error: "Products not implemented." });
   },
 
   async get(_req: Request, res: Response) {
-    res.status(501).json({
-      ok: false,
-      error: "Products get endpoint not implemented. Drizzle has been removed.",
-    });
+    res.status(501).json({ ok: false, error: "Products not implemented." });
   },
 
   async create(_req: Request, res: Response) {
-    res.status(501).json({
-      ok: false,
-      error: "Products create endpoint not implemented. Drizzle has been removed.",
-    });
+    res.status(501).json({ ok: false, error: "Products not implemented." });
   },
 
   async update(_req: Request, res: Response) {
-    res.status(501).json({
-      ok: false,
-      error: "Products update endpoint not implemented. Drizzle has been removed.",
-    });
+    res.status(501).json({ ok: false, error: "Products not implemented." });
   },
 
   async remove(_req: Request, res: Response) {
-    res.status(501).json({
-      ok: false,
-      error: "Products remove endpoint not implemented. Drizzle has been removed.",
-    });
+    res.status(501).json({ ok: false, error: "Products not implemented." });
   },
 };
+EOF
