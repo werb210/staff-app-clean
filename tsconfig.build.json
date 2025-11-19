@@ -2,7 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist/server",
-    "rootDir": "./server",
+    "rootDir": "./server/src",
     "module": "commonjs",
     "target": "ES2020",
     "moduleResolution": "node",
@@ -12,6 +12,6 @@
     "strict": false,
     "allowJs": true
   },
-  "include": ["server/**/*"],
+  "include": ["server/src/**/*"],
   "exclude": ["server/src/__tests__"]
 }
