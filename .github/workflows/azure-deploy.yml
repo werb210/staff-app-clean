@@ -5,7 +5,7 @@ on:
     branches: ["main"]
 
 jobs:
-  build_and_deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,28 +17,49 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: Install deps
         run: npm ci
 
       - name: Build server
         run: npm run build
 
-      - name: Prepare deploy folder
+      - name: Create deploy folder
         run: |
           rm -rf deploy
           mkdir deploy
+          
           cp -R dist deploy/dist
-          cp package.json deploy/package.json
-          cp package-lock.json deploy/package-lock.json
+          cp -R node_modules deploy/node_modules
+          cp package.json deploy/
+          cp package-lock.json deploy/
 
-      - name: Zip folder
+      - name: Zip deploy
         run: |
           cd deploy
           zip -r ../release.zip .
 
-      - name: Deploy to Azure
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: release.zip
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release
+
+      - name: Unzip artifact for Azure
+        run: unzip release.zip -d app
+
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: boreal-staff-server
           publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
-          package: release.zip
+          package: app
