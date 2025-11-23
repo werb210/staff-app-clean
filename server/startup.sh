@@ -1,5 +1,5 @@
-cat > server/startup.sh << 'EOF'
-#!/bin/bash
-cd /home/site/wwwroot
+#!/usr/bin/env bash
+set -e
+
+echo "Starting Staff Server..."
 node dist/index.js
-EOF
