@@ -23,7 +23,7 @@ jobs:
       - name: Build server
         run: npm run build
 
-      - name: Prepare deployment folder
+      - name: Create deploy folder
         run: |
           rm -rf deploy
           mkdir deploy
@@ -32,7 +32,7 @@ jobs:
           cp package.json deploy/
           cp package-lock.json deploy/
 
-      - name: Zip app
+      - name: Zip deploy
         run: |
           cd deploy
           zip -r ../release.zip .
@@ -59,3 +59,4 @@ jobs:
           app-name: boreal-staff-server
           publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
           package: release.zip
+        
