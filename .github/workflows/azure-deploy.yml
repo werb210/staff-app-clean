@@ -9,36 +9,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node 20
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install deps
+      - name: Install
         run: npm ci
 
-      - name: Build server
+      - name: Build
         run: npm run build
 
-      - name: Create deploy folder
+      - name: Prepare deploy directory
         run: |
-          rm -rf deploy
           mkdir deploy
           cp -R dist deploy/dist
           cp -R node_modules deploy/node_modules
           cp package.json deploy/
           cp package-lock.json deploy/
 
-      - name: Zip deploy
+      - name: Zip artifact
         run: |
           cd deploy
           zip -r ../release.zip .
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: release
           path: release.zip
@@ -48,8 +45,7 @@ jobs:
     needs: build
 
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: release
 
@@ -59,4 +55,3 @@ jobs:
           app-name: boreal-staff-server
           publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
           package: release.zip
-        
