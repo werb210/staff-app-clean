@@ -1,23 +1,24 @@
 import type { Request, Response } from "express";
+import asyncHandler from "../utils/asyncHandler.js";
 
 export const pipelineController = {
-  async list(_req: Request, res: Response) {
+  list: asyncHandler(async (_req: Request, res: Response) => {
     res.status(501).json({ ok: false, error: "Pipeline not implemented." });
-  },
+  }),
 
-  async get(_req: Request, res: Response) {
+  get: asyncHandler(async (_req: Request, res: Response) => {
     res.status(501).json({ ok: false, error: "Pipeline not implemented." });
-  },
+  }),
 
-  async create(_req: Request, res: Response) {
+  create: asyncHandler(async (_req: Request, res: Response) => {
     res.status(501).json({ ok: false, error: "Pipeline not implemented." });
-  },
+  }),
 
-  async update(_req: Request, res: Response) {
+  update: asyncHandler(async (_req: Request, res: Response) => {
     res.status(501).json({ ok: false, error: "Pipeline not implemented." });
-  },
+  }),
 
-  async remove(_req: Request, res: Response) {
+  remove: asyncHandler(async (_req: Request, res: Response) => {
     res.status(501).json({ ok: false, error: "Pipeline not implemented." });
-  },
+  }),
 };

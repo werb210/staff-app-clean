@@ -1,25 +1,26 @@
 // server/src/controllers/applicationsController.ts
 import type { Request, Response } from "express";
 import { applicationsService } from "../services/applicationsService.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
 export const applicationsController = {
-  async list(_req: Request, res: Response) {
+  list: asyncHandler(async (_req: Request, res: Response) => {
     res.json(await applicationsService.list());
-  },
+  }),
 
-  async get(req: Request, res: Response) {
+  get: asyncHandler(async (req: Request, res: Response) => {
     res.json(await applicationsService.get(req.params.id));
-  },
+  }),
 
-  async create(req: Request, res: Response) {
+  create: asyncHandler(async (req: Request, res: Response) => {
     res.json(await applicationsService.create(req.body));
-  },
+  }),
 
-  async update(req: Request, res: Response) {
+  update: asyncHandler(async (req: Request, res: Response) => {
     res.json(await applicationsService.update(req.params.id, req.body));
-  },
+  }),
 
-  async remove(req: Request, res: Response) {
+  remove: asyncHandler(async (req: Request, res: Response) => {
     res.json(await applicationsService.delete(req.params.id));
-  },
+  }),
 };

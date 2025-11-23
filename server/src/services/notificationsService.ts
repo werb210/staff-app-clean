@@ -30,6 +30,10 @@ type NotificationCreateData = Partial<
   Pick<NotificationRecord, "title" | "message" | "type">
 >;
 
+type NotificationUpdateData = Partial<
+  Pick<NotificationRecord, "title" | "message" | "type" | "read">
+>;
+
 export const notificationsService = {
   /**
    * Fetch all notifications for a user
@@ -49,6 +53,13 @@ export const notificationsService = {
         createdAt: true,
       },
     }) as Promise<NotificationListItem[]>;
+  },
+
+  /**
+   * Fetch a single notification
+   */
+  async get(id: string): Promise<NotificationRecord | null> {
+    return db.notification.findUnique({ where: { id } });
   },
 
   /**
@@ -77,6 +88,16 @@ export const notificationsService = {
         createdAt: true,
       },
     }) as Promise<NotificationListItem>;
+  },
+
+  /**
+   * Update a notification
+   */
+  async update(
+    id: string,
+    data: NotificationUpdateData,
+  ): Promise<NotificationRecord> {
+    return db.notification.update({ where: { id }, data });
   },
 
   /**
@@ -131,6 +152,13 @@ export const notificationsService = {
     return {
       deleted: result.count,
     };
+  },
+
+  /**
+   * Alias to match legacy controller name
+   */
+  async remove(id: string): Promise<{ deleted: true }> {
+    return this.delete(id);
   },
 };
 

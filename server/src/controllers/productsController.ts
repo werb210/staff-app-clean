@@ -1,23 +1,26 @@
+// server/src/controllers/productsController.ts
 import type { Request, Response } from "express";
+import { productsService } from "../services/productsService.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
 export const productsController = {
-  async list(_req: Request, res: Response) {
-    res.status(501).json({ ok: false, error: "Products not implemented." });
-  },
+  list: asyncHandler(async (_req: Request, res: Response) => {
+    res.json(await productsService.list());
+  }),
 
-  async get(_req: Request, res: Response) {
-    res.status(501).json({ ok: false, error: "Products not implemented." });
-  },
+  get: asyncHandler(async (req: Request, res: Response) => {
+    res.json(await productsService.get(req.params.id));
+  }),
 
-  async create(_req: Request, res: Response) {
-    res.status(501).json({ ok: false, error: "Products not implemented." });
-  },
+  create: asyncHandler(async (req: Request, res: Response) => {
+    res.json(await productsService.create(req.body));
+  }),
 
-  async update(_req: Request, res: Response) {
-    res.status(501).json({ ok: false, error: "Products not implemented." });
-  },
+  update: asyncHandler(async (req: Request, res: Response) => {
+    res.json(await productsService.update(req.params.id, req.body));
+  }),
 
-  async remove(_req: Request, res: Response) {
-    res.status(501).json({ ok: false, error: "Products not implemented." });
-  },
+  remove: asyncHandler(async (req: Request, res: Response) => {
+    res.json(await productsService.delete(req.params.id));
+  }),
 };
