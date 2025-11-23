@@ -12,13 +12,13 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Node 20
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install deps (no dev)
-        run: npm ci --omit=dev
+      - name: Install deps
+        run: npm ci
 
       - name: Build server
         run: npm run build
@@ -31,8 +31,10 @@ jobs:
           cp -R node_modules deploy/node_modules
           cp package.json deploy/
           cp package-lock.json deploy/
-          cp server/startup.sh deploy/startup.sh
-          chmod +x deploy/startup.sh
+
+          # Azure will auto-run npm start → must point to dist/index.js
+          jq '.scripts.start = "node dist/index.js"' package.json > deploy/package.json.tmp
+          mv deploy/package.json.tmp deploy/package.json
 
       - name: Zip deploy
         run: |
