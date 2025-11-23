@@ -1,95 +1,43 @@
-// ============================================================================
 // server/src/controllers/notificationsController.ts
-// Compatible with rewritten Prisma notificationsService
-// ============================================================================
-
 import type { Request, Response } from "express";
 import { notificationsService } from "../services/notificationsService.js";
+import asyncHandler from "../utils/asyncHandler.js";
+
+function resolveUserId(req: Request, res: Response): string | null {
+  const userId = (req.query.userId as string) ?? req.body?.userId;
+
+  if (!userId) {
+    res.status(400).json({ ok: false, error: "userId is required" });
+    return null;
+  }
+
+  return String(userId);
+}
 
 export const notificationsController = {
-  async list(req: Request, res: Response) {
-    try {
-      const userId = req.params.userId || req.query.userId;
-      if (!userId) {
-        return res.status(400).json({ ok: false, error: "Missing userId" });
-      }
+  list: asyncHandler(async (req: Request, res: Response) => {
+    const userId = resolveUserId(req, res);
+    if (!userId) return;
 
-      const data = await notificationsService.list(String(userId));
-      res.json({ ok: true, data });
-    } catch (err: any) {
-      res.status(500).json({ ok: false, error: err.message });
-    }
-  },
+    res.json(await notificationsService.list(userId));
+  }),
 
-  async get(req: Request, res: Response) {
-    try {
-      const id = req.params.id;
-      const data = await notificationsService.list(req.params.userId);
+  get: asyncHandler(async (req: Request, res: Response) => {
+    res.json(await notificationsService.get(req.params.id));
+  }),
 
-      const item = data.find((n) => n.id === id);
-      if (!item) return res.status(404).json({ ok: false });
+  create: asyncHandler(async (req: Request, res: Response) => {
+    const userId = resolveUserId(req, res);
+    if (!userId) return;
 
-      res.json({ ok: true, data: item });
-    } catch (err: any) {
-      res.status(500).json({ ok: false, error: err.message });
-    }
-  },
+    res.json(await notificationsService.create(userId, req.body));
+  }),
 
-  async create(req: Request, res: Response) {
-    try {
-      const { userId, title, message, type } = req.body;
-      if (!userId) {
-        return res.status(400).json({ ok: false, error: "Missing userId" });
-      }
+  update: asyncHandler(async (req: Request, res: Response) => {
+    res.json(await notificationsService.update(req.params.id, req.body));
+  }),
 
-      const inserted = await notificationsService.create(String(userId), {
-        title,
-        message,
-        type,
-      });
-
-      res.json({ ok: true, data: inserted });
-    } catch (err: any) {
-      res.status(500).json({ ok: false, error: err.message });
-    }
-  },
-
-  async update(req: Request, res: Response) {
-    try {
-      const id = req.params.id;
-
-      const updated = await notificationsService.markRead(id);
-      res.json({ ok: true, data: updated });
-    } catch (err: any) {
-      res.status(500).json({ ok: false, error: err.message });
-    }
-  },
-
-  async remove(req: Request, res: Response) {
-    try {
-      const id = req.params.id;
-
-      await notificationsService.delete(id);
-      res.json({ ok: true });
-    } catch (err: any) {
-      res.status(500).json({ ok: false, error: err.message });
-    }
-  },
-
-  async removeAll(req: Request, res: Response) {
-    try {
-      const userId = req.params.userId;
-      if (!userId)
-        return res.status(400).json({ ok: false, error: "Missing userId" });
-
-      const result = await notificationsService.deleteAll(userId);
-      res.json({ ok: true, data: result });
-    } catch (err: any) {
-      res.status(500).json({ ok: false, error: err.message });
-    }
-  },
+  remove: asyncHandler(async (req: Request, res: Response) => {
+    res.json(await notificationsService.remove(req.params.id));
+  }),
 };
-
-// ============================================================================
-// END OF FILE
-// ============================================================================

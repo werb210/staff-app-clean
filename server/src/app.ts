@@ -1,5 +1,6 @@
 // server/src/app.ts
 import express from "express";
+import type { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 
@@ -35,3 +36,12 @@ app.get("/", (_req, res) => {
     uptime: process.uptime(),
   });
 });
+
+// Error handler to ensure failed DB calls don't crash the process
+app.use(
+  (err: any, _req: Request, res: Response, _next: NextFunction) => {
+    console.error("Unhandled error in request:", err);
+    const message = err?.message || "Internal server error";
+    res.status(500).json({ ok: false, error: message });
+  }
+);
