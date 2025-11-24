@@ -35,17 +35,23 @@ ENV NODE_ENV=production
 ENV PORT=8080
 WORKDIR /app
 
+# Use the non-root "node" user throughout the runtime image
+RUN mkdir -p /app && chown -R node:node /app
+USER node
+
 # Install only production dependencies
-COPY package*.json ./
-COPY prisma ./prisma
-COPY scripts ./scripts
-RUN npm ci --omit=dev
+COPY --chown=node:node package*.json ./
+COPY --chown=node:node prisma ./prisma
+COPY --chown=node:node scripts ./scripts
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy the compiled app and supporting files
 COPY --from=builder /app/dist ./dist
-COPY startup.sh ./startup.sh
+COPY --chown=node:node startup.sh ./startup.sh
 
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD wget -qO- "http://127.0.0.1:${PORT:-8080}/api/_int/live" >/dev/null 2>&1 || exit 1
 
 # Start the compiled server directly
 CMD ["node", "dist/server/index.js"]
