@@ -1,0 +1,59 @@
+name: Deploy Staff Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      ###############################################
+      # BUILD THE SERVER
+      ###############################################
+      - name: Install server dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Build server
+        working-directory: server
+        run: npm run build
+
+      ###############################################
+      # PACKAGE ARTIFACT FOR AZURE
+      ###############################################
+      - name: Create deployment package
+        run: |
+          mkdir -p build/server
+          cp -R server/dist build/server/dist
+          cp -R server/node_modules build/server/node_modules
+          cp server/package.json build/server/package.json
+          cp server/package-lock.json build/server/package-lock.json
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: server
+          path: build/
+
+      ###############################################
+      # DEPLOY TO AZURE APP SERVICE
+      ###############################################
+      - name: Azure WebApp Deploy
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: boreal-staff-server
+          slot-name: production
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+          package: build/server
