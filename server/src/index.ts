@@ -3,7 +3,7 @@ import { app } from "./app.js";
 import prisma, { hasDatabaseUrl } from "./db/index.js";
 import { ENV } from "./utils/env.js";
 
-const PORT = Number(process.env.PORT ?? ENV.PORT ?? 8080);
+const PORT = Number(process.env.WEBSITES_PORT ?? process.env.PORT ?? ENV.PORT ?? 8080);
 
 async function start() {
   app.locals.dbReady = false;
