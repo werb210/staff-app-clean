@@ -15,6 +15,7 @@ COPY package*.json ./
 COPY prisma ./prisma
 COPY tsconfig*.json ./
 COPY server ./server
+COPY scripts ./scripts
 COPY startup.sh ./startup.sh
 
 # Install all dependencies (including dev deps for TypeScript build)
@@ -37,6 +38,7 @@ WORKDIR /app
 # Install only production dependencies
 COPY package*.json ./
 COPY prisma ./prisma
+COPY scripts ./scripts
 RUN npm ci --omit=dev
 
 # Copy the compiled app and supporting files
@@ -46,4 +48,4 @@ COPY startup.sh ./startup.sh
 EXPOSE 8080
 
 # Start the compiled server directly
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/server/index.js"]
