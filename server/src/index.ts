@@ -1,56 +1,51 @@
-// server/src/index.ts
-
 import "dotenv/config";
 import express from "express";
 import { app } from "./app.js";
 import prisma, { prismaInitError, prismaIsAvailable } from "./db/index.js";
 
-// Azure gives PORT automatically → always respect it
+// Azure injects PORT dynamically → always respect it
+// Default fallback MUST be 8080 for App Service
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 
-// If REQUIRE_DATABASE=true → crash on DB error
+// Optional strict startup behavior
 const REQUIRE_DB = process.env.REQUIRE_DATABASE === "true";
 
 async function start() {
   app.locals.dbReady = false;
 
-  if (!prismaIsAvailable) {
-    if (prismaInitError) {
-      console.error("Prisma initialization failed:", prismaInitError.message);
-    } else {
-      console.warn("Prisma client unavailable; skipping DB connection.");
-    }
-
-    if (REQUIRE_DB) {
-      console.error("REQUIRE_DATABASE=true — exiting.");
-      process.exit(1);
-      return;
-    }
-
-    console.warn("Starting server WITHOUT database.");
-  } else {
+  // ------------------------------
+  //  Attempt database connection
+  // ------------------------------
+  if (prisma) {
     try {
-      console.log("Connecting to database...");
       await prisma.$connect();
-      console.log("Database connected.");
+      console.log("✅ Database connected");
       app.locals.dbReady = true;
-    } catch (err: any) {
-      console.error("Database connection failed:", err?.message || err);
+    } catch (err) {
+      console.error("❌ Database connection failed:", err);
 
       if (REQUIRE_DB) {
-        console.error("REQUIRE_DATABASE=true — exiting.");
+        console.error("REQUIRE_DATABASE=true → exiting.");
         process.exit(1);
-        return;
       }
 
-      console.warn("Starting server WITHOUT database.");
+      // Allow server to run without DB
+      console.warn("⚠️ Starting server WITHOUT database.");
       app.locals.dbReady = false;
     }
   }
 
-  app.listen(PORT, () => {
-    console.log(`🚀 Staff Server running on port ${PORT}`);
-  });
+  // ------------------------------
+  //    Start HTTP server
+  // ------------------------------
+  try {
+    app.listen(PORT, () => {
+      console.log(`🚀 Staff Server running on port ${PORT}`);
+    });
+  } catch (err) {
+    console.error("❌ Failed to start HTTP server:", err);
+    process.exit(1);
+  }
 }
 
 start();
