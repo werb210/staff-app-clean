@@ -1,15 +1,12 @@
 {
-  "extends": "../tsconfig.json",
-
   "compilerOptions": {
-    "rootDir": "./src",
-    "noEmit": true
+    "target": "ES2019",
+    "module": "commonjs",
+    "rootDir": "src",
+    "outDir": "dist",
+    "esModuleInterop": true,
+    "strict": false,
+    "resolveJsonModule": true
   },
-
-  "include": ["./src/**/*"],
-  "exclude": [
-    "**/*.test.ts",
-    "**/*.spec.ts",
-    "node_modules"
-  ]
+  "include": ["src"]
 }
