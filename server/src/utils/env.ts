@@ -28,7 +28,7 @@ if (missing.length > 0) {
 
 export const ENV = {
   NODE_ENV: optionalEnv("NODE_ENV", "development"),
-  PORT: optionalEnv("PORT", "5000"),
+  PORT: optionalEnv("PORT", "8080"),
 
   // Database
   DATABASE_URL: getEnv("DATABASE_URL"),

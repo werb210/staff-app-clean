@@ -6,4 +6,4 @@ echo "PWD: $(pwd)"
 echo "FILES IN WWWROOT:"
 ls -la
 
-node dist/index.js
+exec node dist/server/index.js
