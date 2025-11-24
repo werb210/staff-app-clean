@@ -13,7 +13,6 @@ async function start() {
     try {
       await prisma.$connect();
       app.locals.dbReady = true;
-      console.log("✅ Database connected");
     } catch (err) {
       console.error("⚠️  Failed to connect to database", err);
 
@@ -22,14 +21,10 @@ async function start() {
         process.exit(1);
       }
     }
-  } else {
-    console.warn(
-      "Skipping database connection because DATABASE_URL is missing or SKIP_DATABASE=true",
-    );
   }
 
   app.listen(PORT, () => {
-    console.log(`🚀 Server ready on port ${PORT}`);
+    console.log("🚀 Server ready on port", PORT);
   });
 }
 

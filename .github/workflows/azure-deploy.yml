@@ -31,18 +31,26 @@ jobs:
 
           # --- PLACE EVERYTHING IN ZIP ROOT ---
           cp -R dist deploy/dist
-          cp -R node_modules deploy/node_modules
           cp package.json deploy/
           cp package-lock.json deploy/
-
-          # --- PLACE startup.sh IN ZIP ROOT ---
           cp startup.sh deploy/startup.sh
           chmod 755 deploy/startup.sh
+
+          # --- INCLUDE SOURCE REFERENCES ---
+          cp -R server deploy/server
+          cp -R src deploy/src
 
       - name: Zip deploy
         run: |
           cd deploy
-          zip -r ../release.zip . -x "*.git*" -x "*.env*" -x "**/.env" -x "**/.env.*" -x "node_modules/*"
+          zip -r ../release.zip . \
+            -x "*.git*" \
+            -x "*.env*" \
+            -x "**/.env" \
+            -x "**/.env.*" \
+            -x "*.gz" \
+            -x "node_modules.tar.gz" \
+            -x "_del_node_modules/**"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
