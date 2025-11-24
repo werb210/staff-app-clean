@@ -7,8 +7,6 @@
     "dev": "tsx watch server/src/index.ts",
     "prebuild": "node scripts/prisma-generate.mjs",
     "clean": "node scripts/clean.mjs",
-    "build": "npm run clean && tsc -p tsconfig.build.json",
-    "start": "node dist/server/index.js",
     "postinstall": "node scripts/prisma-generate.mjs",
     "migrate": "tsx server/src/db/migrator.ts",
     "generate:migration": "drizzle-kit generate",

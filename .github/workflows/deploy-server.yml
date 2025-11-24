@@ -2,27 +2,21 @@ name: Deploy Staff Server
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      ###############################################
-      # BUILD THE SERVER
-      ###############################################
-      - name: Install server dependencies
+      - name: Install server deps
         working-directory: server
         run: npm ci
 
@@ -30,33 +24,17 @@ jobs:
         working-directory: server
         run: npm run build
 
-      ###############################################
-      # PACKAGE ARTIFACT FOR AZURE
-      ###############################################
-      - name: Create deployment package
+      - name: Package artifact
         run: |
-          mkdir -p build/server
-          # Copy compiled JS (folder "dist/server")
-          cp -R server/dist/server build/server/dist
-          # Copy production node_modules
-          cp -R server/node_modules build/server/node_modules
-          # Copy package files
-          cp server/package.json build/server/package.json
-          cp server/package-lock.json build/server/package-lock.json
+          mkdir -p package
+          cp -R server/dist package/dist
+          cp server/package.json package/
+          cp server/package-lock.json package/ || true
 
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: server
-          path: build/server
-
-      ###############################################
-      # DEPLOY TO AZURE APP SERVICE
-      ###############################################
-      - name: Azure WebApp Deploy
+      - name: Deploy to Azure
         uses: azure/webapps-deploy@v2
         with:
           app-name: boreal-staff-server
           slot-name: production
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
-          package: build/server
+          package: package
