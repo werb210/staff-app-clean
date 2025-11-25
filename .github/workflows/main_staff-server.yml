@@ -1,4 +1,4 @@
-name: Build and deploy Node.js app to Azure Web App - Staff-Server
+name: Deploy Staff Server to Azure
 
 on:
   push:
@@ -24,14 +24,13 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Zip artifact
-        run: zip -r release.zip .
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-app
-          path: release.zip
+      - name: Prepare artifact
+        run: |
+          rm -rf package
+          mkdir -p package
+          cp -r dist/* package/
+          cp package.json package/
+          cp package-lock.json package/
 
       - name: Azure Login
         uses: azure/login@v2
@@ -41,5 +40,5 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: Staff-Server
-          package: release.zip
+          app-name: staff-server
+          package: package
