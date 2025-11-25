@@ -36,21 +36,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: package
+          path: package/
 
       - name: Azure Login
-        uses: azure/login@v2
+        uses: azure/login@v1
         with:
-          creds: |
-            {
-              "clientId": "${{ secrets.AZUREAPPSERVICE_CLIENTID }}",
-              "clientSecret": "${{ secrets.AZUREAPPSERVICE_CLIENTSECRET }}",
-              "subscriptionId": "${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}",
-              "tenantId": "${{ secrets.AZUREAPPSERVICE_TENANTID }}"
-            }
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          app-name: Staff-Server
           package: package
+        
