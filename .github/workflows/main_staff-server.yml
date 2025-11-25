@@ -13,7 +13,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -31,13 +31,11 @@ jobs:
           cp -r dist/* package/
           cp package.json package/
           cp package-lock.json package/
-
           cd package
           zip -r ../package.zip .
-          cd ..
 
-      - name: Azure Login (correct JSON-based login)
-        uses: azure/login@v1
+      - name: Azure Login
+        uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
