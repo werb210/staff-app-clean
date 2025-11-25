@@ -24,21 +24,22 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Prepare artifact
+      - name: Zip artifact
         run: |
           rm -rf package
           mkdir -p package
           cp -r dist/* package/
           cp package.json package/
           cp package-lock.json package/
+          zip -r release.zip package
 
-      - name: Azure Login
+      - name: Login to Azure
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@v2
         with:
-          app-name: staff-server
-          package: package
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          package: release.zip
