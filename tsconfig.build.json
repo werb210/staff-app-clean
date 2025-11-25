@@ -3,14 +3,14 @@
     "target": "ES2020",
     "module": "ES2020",
     "moduleResolution": "node",
-    "outDir": "dist",
-    "rootDir": "server/src",
+    "outDir": "./dist",
+    "rootDir": "./server/src",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": false,
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["server/src/**/*.ts"],
-  "exclude": ["server/src/__tests__", "node_modules"]
+  "include": ["./server/src/**/*.ts"],
+  "exclude": ["./server/src/__tests__", "node_modules"]
 }
