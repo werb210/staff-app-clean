@@ -31,11 +31,12 @@ jobs:
           cp -r dist/* package/
           cp package.json package/
           cp package-lock.json package/
-          cd package
-          zip -r ../release.zip .
 
-      # THE ONLY BLOCK THAT MATTERS
-      - name: Azure Login
+          cd package
+          zip -r ../package.zip .
+          cd ..
+
+      - name: Azure Login (correct JSON-based login)
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
@@ -44,4 +45,4 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          package: release.zip
+          package: package.zip
