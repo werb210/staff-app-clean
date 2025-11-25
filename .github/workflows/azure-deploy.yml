@@ -1,4 +1,4 @@
-name: Deploy Staff Server to Azure
+name: Build and Deploy Staff Server to Azure
 
 on:
   push:
@@ -9,10 +9,6 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
-    permissions:
-      id-token: write
-      contents: read
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,8 +16,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -29,13 +25,10 @@ jobs:
       - name: Build project
         run: npm run build
 
-      # -------------------------
-      # FIXED PREPARE ARTIFACT BLOCK
-      # -------------------------
       - name: Prepare artifact
         run: |
           rm -rf package
-          mkdir -p package
+          mkdir package
           cp -r dist/* package/
           cp package.json package/
           cp package-lock.json package/
@@ -46,16 +39,13 @@ jobs:
           name: node-app
           path: package
 
-      - name: Azure Login (OIDC)
+      - name: Azure Login (Best Practice)
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_8EE81200BCCC4E7FBDE9A5C36EE91DFC }}
-          allow-no-subscriptions: true
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           package: package
