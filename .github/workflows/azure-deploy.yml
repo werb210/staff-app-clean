@@ -5,19 +5,15 @@ on:
     branches:
       - main
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -25,26 +21,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build app
+      - name: Build project
         run: npm run build
 
-      - name: Zip artifact
+      - name: Prepare artifact
         run: |
           mkdir package
-          cp -r . package/
-          cd package
-          zip -r ../node-app.zip .
+          cp -R . package/
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-app
+          path: package
 
       - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID }}
+          client-secret: ${{ secrets.AZUREAPPSERVICE_CLIENTSECRET }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_8EE... }} 
-          client-secret: ${{ secrets.AZUREAPPSERVICE_CLIENTSECRET }} 
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_8EE81200BCCC4E7FBDE9A5C36EE91DFC }}
+          auth-type: SERVICE_PRINCIPAL
 
       - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          package: node-app.zip
+          package: package
