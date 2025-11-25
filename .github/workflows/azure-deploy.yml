@@ -6,51 +6,52 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      # -------------------------------------------------------
-      # Check out the repository
-      # -------------------------------------------------------
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      # -------------------------------------------------------
-      # Set Node version (must match WEBSITE_NODE_DEFAULT_VERSION)
-      # -------------------------------------------------------
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
-      # -------------------------------------------------------
-      # Install dependencies
-      # -------------------------------------------------------
-      - name: Install dependencies
+      - name: Install deps
         run: npm ci
 
-      # -------------------------------------------------------
-      # Build (if your server has a build step; otherwise remove)
-      # -------------------------------------------------------
-      - name: Build server
-        run: npm run build --if-present
+      - name: Build
+        run: npm run build || echo "No build step"
 
-      # -------------------------------------------------------
-      # Azure Login using SERVICE PRINCIPAL
-      # -------------------------------------------------------
+      - name: Archive app
+        run: zip -r node-app.zip . -x '*.git*'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-app
+          path: node-app.zip
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: node-app
+          path: .
+
       - name: Azure Login
-        uses: azure/login@v2
+        uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_8EE81200BCCC4E7F8DE9A53C6EE91DFC }}
+          client-secret: ${{ secrets.AZUREAPPSERVICE_CLIENTSECRET }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_8EE81200BCCC4E7FBDE9A53C6EE91DFC }}
 
-      # -------------------------------------------------------
-      # Deploy to Azure Web App
-      # -------------------------------------------------------
-      - name: Deploy Staff Server
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          package: .
+          package: node-app.zip
