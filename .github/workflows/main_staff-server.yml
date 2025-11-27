@@ -17,9 +17,10 @@ jobs:
         with:
           node-version: 20
 
+      # Use npm install (not npm ci) because your repo has no package-lock.json in /server
       - name: Install dependencies
         working-directory: server
-        run: npm ci
+        run: npm install
 
       - name: Build
         working-directory: server
@@ -30,7 +31,8 @@ jobs:
           mkdir deploy
           cp -R server/dist deploy/dist
           cp server/package.json deploy/package.json
-          cp server/package-lock.json deploy/package-lock.json
+          # Copy lockfile if it exists, skip otherwise
+          if [ -f server/package-lock.json ]; then cp server/package-lock.json deploy/package-lock.json; fi
           mkdir deploy/prisma
           cp -R server/prisma/* deploy/prisma/
 
