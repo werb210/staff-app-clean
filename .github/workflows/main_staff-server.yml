@@ -2,46 +2,47 @@ name: Deploy Staff Server to Azure
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: 20
+          cache: "npm"
 
-      # Install dependencies at repo root (where package.json actually is)
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      # Build using root tsconfig
-      - name: Build project
+      - name: Build server
         run: npm run build
 
-      # Prepare deploy folder
-      - name: Prepare deployment package
+      - name: Create deployment package
         run: |
           mkdir deploy
-          cp -R dist deploy/dist
-          cp package.json deploy/package.json
-          if [ -f package-lock.json ]; then cp package-lock.json deploy/package-lock.json; fi
-          mkdir deploy/prisma
-          cp -R prisma/* deploy/prisma/
+          cp package.json deploy/
+          cp package-lock.json deploy/
+          cp -r dist deploy/
+          cp -r prisma deploy/
+          cp -r server deploy/
+          cp -r scripts deploy/
 
-      # Zip folder to deploy
-      - name: Zip deploy package
-        run: zip -r deploy.zip deploy
+      - name: Zip deployment artifacts
+        run: |
+          cd deploy
+          zip -r ../deployment.zip .
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: "boreal-staff-server"
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: "deploy.zip"
+          app-name: boreal-staff-server
+          package: deployment.zip
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
