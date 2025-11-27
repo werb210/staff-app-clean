@@ -32,7 +32,7 @@ jobs:
           cp package.json deploy/
           cp package-lock.json deploy/ || true
 
-      - name: Deploy to Azure Web App
+      - name: Deploy to Azure Web App (Publish Profile)
         uses: azure/webapps-deploy@v2
         with:
           app-name: boreal-staff-server
