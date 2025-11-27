@@ -15,7 +15,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -23,9 +22,19 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Prepare deployment package
+      # Copy ONLY required runtime files
+      - name: Prepare Azure ZIP
         run: |
-          zip -r release.zip dist node_modules package.json package-lock.json
+          mkdir output
+          cp package.json output/
+          cp package-lock.json output/
+          cp -R dist output/
+          cp -R prisma output/
+          # include any startup scripts if needed
+          cd output
+          npm ci --omit=dev
+
+          zip -r ../release.zip .
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
