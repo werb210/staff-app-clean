@@ -2,8 +2,7 @@ name: Deploy Staff Server to Azure
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
   build-and-deploy:
@@ -16,25 +15,31 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
       - name: Install dependencies
+        working-directory: server
         run: npm ci
 
-      - name: Build project
+      - name: Build
+        working-directory: server
         run: npm run build
 
-      - name: Prepare deployment package
+      - name: Prepare deploy folder
         run: |
           mkdir deploy
-          cp -R dist deploy/dist
-          cp -R node_modules deploy/node_modules
-          cp package.json deploy/
-          cp package-lock.json deploy/ || true
+          cp -R server/dist deploy/dist
+          cp server/package.json deploy/package.json
+          cp server/package-lock.json deploy/package-lock.json
+          mkdir deploy/prisma
+          cp -R server/prisma/* deploy/prisma/
 
-      - name: Deploy to Azure Web App (Publish Profile)
+      - name: Zip artifact
+        run: zip -r deploy.zip deploy
+
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: boreal-staff-server
+          app-name: "boreal-staff-server"
+          package: "deploy.zip"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: deploy
