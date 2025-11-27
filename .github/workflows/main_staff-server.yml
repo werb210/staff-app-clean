@@ -10,39 +10,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
-      - name: Build server
+      - name: Build project
         run: npm run build
 
-      - name: Create deployment package
-        run: |
-          mkdir deploy
-          cp package.json deploy/
-          cp package-lock.json deploy/
-          cp -r dist deploy/
-          cp -r prisma deploy/
-          cp -r server deploy/
-          cp -r scripts deploy/
-
-      - name: Zip deployment artifacts
-        run: |
-          cd deploy
-          zip -r ../deployment.zip .
-
-      - name: Deploy to Azure Web App
+      - name: Deploy via ZipDeploy
         uses: azure/webapps-deploy@v2
         with:
           app-name: boreal-staff-server
-          package: deployment.zip
-          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: .
