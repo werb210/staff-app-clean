@@ -1,31 +1,28 @@
-import "dotenv/config";
-import { app } from "./app.js";
-import prisma, { hasDatabaseUrl } from "./db/index.js";
-import { ENV } from "./utils/env.js";
+import http from "http";
+import app from "./app.js";
 
-const PORT = Number(process.env.WEBSITES_PORT ?? process.env.PORT ?? ENV.PORT ?? 8080);
+const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 
-async function start() {
-  app.locals.dbReady = false;
+async function startServer() {
+  try {
+    const server = http.createServer(app);
 
-  const shouldSkipDb = ENV.SKIP_DATABASE || !hasDatabaseUrl;
-  if (!shouldSkipDb) {
-    try {
-      await prisma.$connect();
-      app.locals.dbReady = true;
-    } catch (err) {
-      console.error("⚠️  Failed to connect to database", err);
+    server.listen(PORT, () => {
+      console.log("=== STAFF SERVER STARTED ===");
+      console.log("PORT:", PORT);
+      console.log("NODE_ENV:", process.env.NODE_ENV);
+      console.log("DATABASE_URL exists:", !!process.env.DATABASE_URL);
+      console.log("=================================");
+    });
 
-      if (ENV.REQUIRE_DATABASE) {
-        console.error("Exiting because REQUIRE_DATABASE=true");
-        process.exit(1);
-      }
-    }
+    server.on("error", (err) => {
+      console.error("SERVER ERROR:", err);
+      process.exit(1);
+    });
+  } catch (err) {
+    console.error("FATAL STARTUP ERROR:", err);
+    process.exit(1);
   }
-
-  app.listen(PORT, () => {
-    console.log("🚀 Server ready on port", PORT);
-  });
 }
 
-start();
+startServer();
