@@ -17,31 +17,31 @@ jobs:
         with:
           node-version: 20
 
-      # Use npm install (not npm ci) because your repo has no package-lock.json in /server
+      # Install dependencies at repo root (where package.json actually is)
       - name: Install dependencies
-        working-directory: server
         run: npm install
 
-      - name: Build
-        working-directory: server
+      # Build using root tsconfig
+      - name: Build project
         run: npm run build
 
-      - name: Prepare deploy folder
+      # Prepare deploy folder
+      - name: Prepare deployment package
         run: |
           mkdir deploy
-          cp -R server/dist deploy/dist
-          cp server/package.json deploy/package.json
-          # Copy lockfile if it exists, skip otherwise
-          if [ -f server/package-lock.json ]; then cp server/package-lock.json deploy/package-lock.json; fi
+          cp -R dist deploy/dist
+          cp package.json deploy/package.json
+          if [ -f package-lock.json ]; then cp package-lock.json deploy/package-lock.json; fi
           mkdir deploy/prisma
-          cp -R server/prisma/* deploy/prisma/
+          cp -R prisma/* deploy/prisma/
 
-      - name: Zip artifact
+      # Zip folder to deploy
+      - name: Zip deploy package
         run: zip -r deploy.zip deploy
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: "boreal-staff-server"
-          package: "deploy.zip"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: "deploy.zip"
