@@ -16,7 +16,7 @@ import communicationsRoutes from "./routes/communications.routes.js";
 import pipelineRoutes from "./routes/pipeline.routes.js";
 import searchRoutes from "./routes/search.routes.js";
 import tagsRoutes from "./routes/tags.routes.js";
-import ocrRoutes from "./routes/ocr.routes.js";
+import ocrRoutes from "./routes/ocr.js";
 import usersRoutes from "./routes/users.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
 
