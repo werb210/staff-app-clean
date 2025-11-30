@@ -11,6 +11,7 @@ import { initAzureBlob } from './services/blobService.js';
 import { loadEnv } from './config/env.js';
 import applicationRoutes from './routes/application.js';
 import documentRoutes from './routes/documents.js';
+import bankingRoutes from './routes/banking.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,6 +72,8 @@ app.get('/api/_int/ping', (req: Request, res: Response) => {
 app.use('/api/application', applicationRoutes);
 
 app.use('/api/documents', documentRoutes);
+
+app.use('/api/banking', bankingRoutes);
 
 app.use('/api/chat', (req, res) => {
   res.status(501).json({ error: 'Chat routes not implemented yet (Codex Block 9)' });
