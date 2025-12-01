@@ -14,8 +14,6 @@
     "reconcile": "tsx scripts/reconcileData.mts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.637.0",
-    "@aws-sdk/s3-request-presigner": "^3.637.0",
     "@azure/storage-blob": "^12.29.1",
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.3",
@@ -34,7 +32,6 @@
     "fs-extra": "^11.2.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.2",
-    "multer-s3": "^3.0.1",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.12",
     "openai": "^4.104.0",

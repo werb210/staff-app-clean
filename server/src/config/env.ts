@@ -15,8 +15,7 @@ type EnvShape = {
   PORT: number;
 
   // Azure Blob Storage
-  AZURE_STORAGE_ACCOUNT: string;
-  AZURE_STORAGE_ACCESS_KEY: string;
+  AZURE_STORAGE_CONNECTION_STRING: string;
   AZURE_STORAGE_CONTAINER: string;
 
   // Database
@@ -42,8 +41,7 @@ const requiredVars = [
   'PORT',
 
   // Azure Blob
-  'AZURE_STORAGE_ACCOUNT',
-  'AZURE_STORAGE_ACCESS_KEY',
+  'AZURE_STORAGE_CONNECTION_STRING',
   'AZURE_STORAGE_CONTAINER',
 
   // Database
