@@ -1,10 +1,8 @@
 // server/src/index.ts
 import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
-import http from 'http';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { WebSocketServer } from 'ws';
 import { loadEnv } from './config/env.js';
 import applicationRoutes from './routes/application.js';
 import documentRoutes from './routes/documents.js';
@@ -13,6 +11,7 @@ import chatRoutes from './routes/chat.js';
 import signingRoutes from './routes/signing.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import auditRoutes from './routes/audit.js';
+import { initWebsocket } from "./realtime/ws.js";
 
 //
 // =======================================================
@@ -91,24 +90,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 //  7. Create HTTP + WebSocket Servers
 // =======================================================
 //
-const server = http.createServer(app);
-
-// WebSocket Server – used by chat + pipeline notifications
-const wss = new WebSocketServer({ server });
-wss.on('connection', (ws) => {
-  ws.send(JSON.stringify({ type: 'connection', message: 'WebSocket connected' }));
-});
-
-//
-// Make WebSocket Broadcast function globally accessible later
-//
-(global as any).broadcast = (payload: any) => {
-  const message = JSON.stringify(payload);
-  wss.clients.forEach((client) => {
-    try { client.send(message); } catch (_) {}
-  });
-};
-
 //
 // =======================================================
 //  8. Start Server
@@ -116,6 +97,8 @@ wss.on('connection', (ws) => {
 //
 const PORT = env.PORT || 5000;
 
-server.listen(PORT, () => {
+const httpServer = app.listen(PORT, () => {
   console.log(`🚀 Staff-Server running on port ${PORT}`);
 });
+
+initWebsocket(httpServer);

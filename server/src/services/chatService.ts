@@ -1,46 +1,24 @@
-// server/src/services/chatService.ts
-import messagesRepo from '../db/repositories/messages.repo.js';
+import { db } from "../db/db.js";
+import { messages } from "../db/schema/messages.js";
+import { eq } from "drizzle-orm";
+import { communicationService } from "./communicationService.js";
 
-declare const broadcast: (payload: any) => void;
+export async function saveChatMessage({ senderId, applicationId, body, attachments }: any) {
+  const created = await db
+    .insert(messages)
+    .values({
+      senderId,
+      applicationId,
+      body,
+      attachments,
+    })
+    .returning();
 
-//
-// ======================================================
-//  SEND MESSAGE
-// ======================================================
-//
-export async function sendMessage(
-  applicationId: string,
-  sender: 'client' | 'staff' | 'ai',
-  body: string
-) {
-  const saved = await messagesRepo.create({
-    applicationId,
-    sender,
-    body,
-    createdAt: new Date(),
-  });
+  await communicationService.logChatActivity({ applicationId, body, senderId });
 
-  //
-  // Real-time broadcast to everyone connected to this silo
-  //
-  broadcast({
-    type: 'message',
-    applicationId,
-    message: saved,
-  });
-
-  return saved;
+  return created[0];
 }
 
-//
-// ======================================================
-//  GET ALL MESSAGES FOR APPLICATION
-// ======================================================
-//
-export async function getMessages(applicationId: string) {
-  const list = await messagesRepo.findMany({ applicationId });
-
-  return (await list).sort(
-    (a: any, b: any) => new Date(a.createdAt as any).getTime() - new Date(b.createdAt as any).getTime(),
-  );
+export async function getChatThread(applicationId: string) {
+  return await db.select().from(messages).where(eq(messages.applicationId, applicationId));
 }

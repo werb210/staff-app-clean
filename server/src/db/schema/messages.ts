@@ -6,8 +6,7 @@ export const messages = pgTable('messages', {
 
   applicationId: uuid('application_id').notNull(),
 
-  // "client" | "staff" | "ai"
-  sender: text('sender').notNull(),
+  senderId: uuid('sender_id').notNull(),
 
   body: text('body').notNull(),
 
