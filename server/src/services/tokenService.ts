@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { env } from "../config/env";
+import { env } from "../config/env.js";
 
 export const tokenService = {
   issue(user: any) {
@@ -7,7 +7,7 @@ export const tokenService = {
       {
         id: user.id,
         role: user.role,
-        silo: user.silo
+        silo: user.silo,
       },
       env.JWT_SECRET,
       { expiresIn: "7d" }
@@ -15,6 +15,6 @@ export const tokenService = {
   },
 
   verify(token: string) {
-    return jwt.verify(token, env.JWT_SECRET);
+    return jwt.verify(token, env.JWT_SECRET) as any;
   }
 };
