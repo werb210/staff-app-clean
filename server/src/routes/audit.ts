@@ -1,9 +1,9 @@
-import { Router } from 'express';
-import * as auditController from '../controllers/auditController.js';
+import { Router } from "express";
+import auditController from "../controllers/auditController.js";
 
 const router = Router();
 
-router.get('/application/:applicationId', auditController.getApplicationAudit);
-router.get('/system', auditController.getSystemAudit);
+// Only listAll exists
+router.get("/", auditController.listAll);
 
 export default router;
