@@ -4,7 +4,8 @@ import signaturesRepo from '../db/repositories/signatures.repo.js';
 
 import * as signNow from './signNowClient.js';
 import * as pipelineService from './pipelineService.js';
-import { uploadBuffer } from './azureBlob.js';
+import { getBlobUrl } from './azureBlob.js';
+import { saveUploadedDocument } from './documentService.js';
 
 //
 // ======================================================
@@ -22,9 +23,23 @@ export async function initSigning(applicationId: string) {
   // For V1: simple JSON → PDF via GPT-4.1
   const pdfBuffer = await generateApplicationPdf(app);
 
-  // Upload PDF to SignNow
+  // Save generated PDF to Azure and use the URL for SignNow
+  const stored = await saveUploadedDocument({
+    applicationId,
+    originalName: `Application-${applicationId}.pdf`,
+    buffer: pdfBuffer,
+    mimeType: "application/pdf",
+    category: "application_pdf",
+  });
+
+  const pdfUrl = getBlobUrl(stored.azureBlobKey);
+
+  // Upload PDF to SignNow using the Azure-hosted version
+  const azureDownload = await fetch(pdfUrl);
+  const azureBuffer = Buffer.from(await azureDownload.arrayBuffer());
+
   const access = await signNow.getAccessToken();
-  const documentId = await signNow.createDocumentFromUpload(access, pdfBuffer);
+  const documentId = await signNow.createDocumentFromUpload(access, azureBuffer);
 
   // Create embedded signing invite
   const invite = await signNow.createEmbeddedInvite(access, documentId, applicantEmail);
@@ -69,11 +84,17 @@ export async function completeSigning(applicationId: string) {
   // Download signed PDF
   const pdfBuffer = await signNow.downloadSignedDocument(access, maybeSig.signNowDocumentId);
 
-  const upload = await uploadBuffer(pdfBuffer, "application/pdf");
+  const uploaded = await saveUploadedDocument({
+    applicationId,
+    originalName: `Signed-Application-${applicationId}.pdf`,
+    buffer: pdfBuffer,
+    mimeType: "application/pdf",
+    category: "signed_application",
+  });
 
   // Update signature record
   const updated = await signaturesRepo.update(maybeSig.id, {
-    signedBlobKey: upload.key,
+    signedBlobKey: uploaded.azureBlobKey,
   });
 
   // Pipeline: mark as signed → moves to "Off to Lender"

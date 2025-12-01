@@ -1,12 +1,12 @@
 // server/src/db/schema/documents.ts
-import { pgTable, uuid, text, timestamp, boolean, integer } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, integer } from 'drizzle-orm/pg-core';
 
 export const documents = pgTable('documents', {
   id: uuid('id').primaryKey().defaultRandom(),
 
   applicationId: uuid('application_id').notNull(),
 
-  name: text('name').notNull(),
+  originalName: text('original_name').notNull(),
   category: text('category'), // bank_statement, id, void_cheque, etc.
   mimeType: text('mime_type').notNull(),
 
