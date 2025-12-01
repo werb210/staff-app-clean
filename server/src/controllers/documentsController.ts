@@ -1,15 +1,22 @@
 // server/src/controllers/documentsController.ts
 import type { Request, Response } from "express";
 import { documentsService } from "../services/documentsService.js";
+import { getDocumentUrl } from "../services/documentService.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
 export const documentsController = {
   list: asyncHandler(async (_req: Request, res: Response) => {
-    res.json(await documentsService.list());
+    const docs = await documentsService.list();
+    const withUrls = await Promise.all(
+      docs.map(async (doc) => ({ ...doc, url: await getDocumentUrl(doc.id) }))
+    );
+    res.json(withUrls);
   }),
 
   get: asyncHandler(async (req: Request, res: Response) => {
-    res.json(await documentsService.get(req.params.id));
+    const doc = await documentsService.get(req.params.id);
+    if (!doc) return res.status(404).json({ error: "Not found" });
+    res.json({ ...doc, url: await getDocumentUrl(doc.id) });
   }),
 
   create: asyncHandler(async (req: Request, res: Response) => {
@@ -20,6 +27,10 @@ export const documentsController = {
 
     if (!payload.applicationId) {
       return res.status(400).json({ error: "applicationId is required" });
+    }
+
+    if (!payload.originalName && !payload.name) {
+      return res.status(400).json({ error: "originalName is required" });
     }
 
     if (!payload.azureBlobKey) {

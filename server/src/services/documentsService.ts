@@ -4,7 +4,7 @@ import documentVersionsRepo from "../db/repositories/documentVersions.repo.js";
 export interface DocumentRecord {
   id: string;
   applicationId: string;
-  name: string;
+  originalName: string;
   category?: string | null;
   azureBlobKey: string;
   mimeType: string;
@@ -18,7 +18,7 @@ export interface DocumentRecord {
 
 export interface DocumentCreateInput {
   applicationId: string;
-  name: string;
+  originalName: string;
   azureBlobKey: string;
   mimeType?: string | null;
   category?: string | null;
@@ -33,7 +33,7 @@ const mapDocument = (doc: any): DocumentRecord | null => {
   return {
     id: doc.id,
     applicationId: doc.applicationId,
-    name: doc.name,
+    originalName: (doc as any).originalName ?? (doc as any).name,
     category: doc.category ?? null,
     azureBlobKey: doc.azureBlobKey,
     mimeType: doc.mimeType,
@@ -60,7 +60,7 @@ export const documentsService = {
   async create(data: DocumentCreateInput): Promise<DocumentRecord> {
     const created = await documentsRepo.create({
       applicationId: data.applicationId,
-      name: data.name,
+      originalName: data.originalName,
       category: data.category ?? null,
       mimeType: data.mimeType ?? "application/octet-stream",
       azureBlobKey: data.azureBlobKey,
@@ -90,7 +90,7 @@ export const documentsService = {
     });
 
     const updated = await documentsRepo.update(id, {
-      name: data.name ?? undefined,
+      originalName: (data as any).originalName ?? (data as any).name ?? undefined,
       category: data.category ?? undefined,
       mimeType: data.mimeType ?? undefined,
       azureBlobKey: data.azureBlobKey ?? undefined,
