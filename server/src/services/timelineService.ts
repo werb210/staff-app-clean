@@ -1,21 +1,16 @@
-// server/src/services/timelineService.ts
-import { logEvent } from "./auditService.js";
+import { timelineRepo } from "../db/repositories/timeline.repo";
 
-interface ActivityPayload {
-  applicationId: string;
-  type: string;
-  message: string;
-  userId?: string;
-}
+export const timelineService = {
+  async add(applicationId: string, event: string, meta: any = {}) {
+    return timelineRepo.insert({
+      applicationId,
+      event,
+      meta,
+      createdAt: new Date()
+    });
+  },
 
-export async function addActivity(payload: ActivityPayload) {
-  const { applicationId, type, message, userId } = payload;
-  await logEvent({
-    eventType: "timeline",
-    applicationId,
-    userId: userId ?? null,
-    details: { type, message },
-  });
-
-  return payload;
-}
+  async list(applicationId: string) {
+    return timelineRepo.list(applicationId);
+  }
+};

@@ -1,26 +1,19 @@
-// server/src/services/productsService.ts
-import productsRepo from "../db/repositories/products.repo.js";
+import { productsRepo } from "../db/repositories/products.repo";
 
 export const productsService = {
   async list() {
-    return productsRepo.findMany();
+    return productsRepo.listAll();
   },
 
   async get(id: string) {
     return productsRepo.findById(id);
   },
 
-  async create(data: unknown) {
-    return productsRepo.create(data as Record<string, unknown>);
+  async create(data: any) {
+    return productsRepo.create(data);
   },
 
-  async update(id: string, data: unknown) {
-    return productsRepo.update(id, data as Record<string, unknown>);
-  },
-
-  async delete(id: string) {
-    return productsRepo.delete(id);
-  },
+  async update(id: string, data: any) {
+    return productsRepo.update(id, data);
+  }
 };
-
-export default productsService;
