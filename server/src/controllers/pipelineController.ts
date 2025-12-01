@@ -9,6 +9,7 @@ import { ocrResults } from "../db/schema/ocr.js";
 import { bankingAnalysis } from "../db/schema/banking.js";
 import * as pipelineService from "../services/pipelineService.js";
 import { getDocumentUrl } from "../services/documentService.js";
+import { broadcast } from "../realtime/ws.js";
 
 //
 // ======================================================
@@ -73,6 +74,12 @@ export async function updateStage(req: Request, res: Response) {
     if (!stage) return res.status(400).json({ error: "New stage required." });
 
     const updated = await pipelineService.updateStage(applicationId, stage, reason);
+
+    broadcast({
+      type: "pipeline:refresh",
+      applicationId,
+      newStage: stage,
+    });
 
     return res.status(200).json(updated);
   } catch (err: any) {

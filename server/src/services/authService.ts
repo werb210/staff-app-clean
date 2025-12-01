@@ -70,3 +70,13 @@ export const authService = {
     return { user: safeUser, token };
   },
 };
+
+export function verifyJwt(token: string) {
+  const payload = tokenService.verify(token);
+  return {
+    id: payload.userId,
+    email: payload.email,
+    roles: payload.roles,
+    siloAccess: payload.siloAccess,
+  };
+}
