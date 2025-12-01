@@ -89,11 +89,9 @@ export async function getDocument(documentId: string) {
     throw new Error('Missing file in Azure Blob Storage.');
   }
 
-  const sasUrl = await blobService.getSasUrl(doc.azureBlobKey);
-
   return {
     ...doc,
-    sasUrl,
+    sasUrl: blobService.getAzureBlobUrl(doc.azureBlobKey),
   };
 }
 

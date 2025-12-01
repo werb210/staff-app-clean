@@ -46,8 +46,7 @@ app.use(requestLogger);
 // =======================================================
 //
 initAzureBlob({
-  accountName: env.AZURE_STORAGE_ACCOUNT,
-  accountKey: env.AZURE_STORAGE_ACCESS_KEY,
+  connectionString: env.AZURE_STORAGE_CONNECTION_STRING,
   containerName: env.AZURE_STORAGE_CONTAINER,
 });
 
