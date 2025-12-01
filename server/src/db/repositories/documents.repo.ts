@@ -1,5 +1,6 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../db.js';
+import { documentVersions } from '../schema/documentVersions.js';
 import { documents } from '../schema/documents.js';
 
 const buildWhere = (filter: Partial<typeof documents.$inferSelect> = {}) => {
@@ -26,7 +27,12 @@ export const documentsRepo = {
   },
 
   async delete(id: string) {
-    const [deleted] = await db.delete(documents).where(eq(documents.id, id)).returning();
+    const [deleted] = await db
+      .update(documents)
+      .set({ status: 'rejected', rejectionReason: 'deleted', updatedAt: new Date() })
+      .where(eq(documents.id, id))
+      .returning();
+
     return deleted ?? null;
   },
 
@@ -35,11 +41,28 @@ export const documentsRepo = {
     return record ?? null;
   },
 
+  async findByApplication(applicationId: string) {
+    return db.select().from(documents).where(eq(documents.applicationId, applicationId));
+  },
+
   async findMany(filter: Partial<typeof documents.$inferSelect> = {}) {
     const where = buildWhere(filter);
     const query = db.select().from(documents);
     if (where) query.where(where);
     return query;
+  },
+
+  async saveVersion(data: Partial<typeof documentVersions.$inferInsert>) {
+    const [created] = await db.insert(documentVersions).values(data as any).returning();
+    return created;
+  },
+
+  async findVersions(documentId: string) {
+    return db
+      .select()
+      .from(documentVersions)
+      .where(eq(documentVersions.documentId, documentId))
+      .orderBy(desc(documentVersions.versionNumber), desc(documentVersions.createdAt));
   },
 };
 

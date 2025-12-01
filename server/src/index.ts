@@ -8,7 +8,7 @@ import { WebSocketServer } from 'ws';
 import { initAzureBlob } from './services/blobService.js';
 import { loadEnv } from './config/env.js';
 import applicationRoutes from './routes/application.js';
-import documentRoutes from './routes/documents.js';
+import documentRoutes from './routes/documents.routes.js';
 import bankingRoutes from './routes/banking.js';
 import chatRoutes from './routes/chat.js';
 import signingRoutes from './routes/signing.js';

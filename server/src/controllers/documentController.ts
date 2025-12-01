@@ -3,10 +3,14 @@ import * as documentService from '../services/documentService.js';
 
 export async function uploadDocument(req: Request, res: Response) {
   try {
-    const { applicationId, documentId } = req.body;
+    const { applicationId, documentId, category } = req.body;
+
+    if (!applicationId) {
+      return res.status(400).json({ error: 'applicationId is required' });
+    }
 
     if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded." });
+      return res.status(400).json({ error: 'No file uploaded.' });
     }
 
     const buffer = req.file.buffer;
@@ -19,6 +23,7 @@ export async function uploadDocument(req: Request, res: Response) {
       fileName,
       mimeType,
       buffer,
+      category: category || null,
     });
 
     return res.status(200).json(doc);
@@ -50,11 +55,6 @@ export async function listDocuments(req: Request, res: Response) {
   }
 }
 
-//
-// ======================================================
-//  ACCEPT DOCUMENT
-// ======================================================
-//
 export async function acceptDocument(req: Request, res: Response) {
   try {
     const { documentId } = req.params;
@@ -66,11 +66,6 @@ export async function acceptDocument(req: Request, res: Response) {
   }
 }
 
-//
-// ======================================================
-//  REJECT DOCUMENT
-// ======================================================
-//
 export async function rejectDocument(req: Request, res: Response) {
   try {
     const { documentId } = req.params;
@@ -84,6 +79,39 @@ export async function rejectDocument(req: Request, res: Response) {
     return res.status(200).json(doc);
   } catch (err: any) {
     console.error('rejectDocument error →', err);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+export async function deleteDocument(req: Request, res: Response) {
+  try {
+    const { documentId } = req.params;
+    const doc = await documentService.deleteDocument(documentId);
+    return res.status(200).json(doc);
+  } catch (err: any) {
+    console.error('deleteDocument error →', err);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+export async function getDownloadUrl(req: Request, res: Response) {
+  try {
+    const { documentId } = req.params;
+    const url = await documentService.getDownloadUrl(documentId);
+    return res.status(200).json({ url });
+  } catch (err: any) {
+    console.error('getDownloadUrl error →', err);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+export async function getVersionHistory(req: Request, res: Response) {
+  try {
+    const { documentId } = req.params;
+    const history = await documentService.getVersionHistory(documentId);
+    return res.status(200).json(history);
+  } catch (err: any) {
+    console.error('getVersionHistory error →', err);
     return res.status(500).json({ error: err.message });
   }
 }

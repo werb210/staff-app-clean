@@ -6,7 +6,7 @@ export async function runOCR(req: Request, res: Response) {
   try {
     const { documentId } = req.params;
 
-    const result = await ocrService.runOCR(documentId);
+    const result = await ocrService.run(documentId);
 
     return res.status(200).json(result);
   } catch (err: any) {

@@ -42,6 +42,21 @@ export const applicationsRepo = {
     if (where) query.where(where);
     return query;
   },
+
+  async markApplicationDocStatus(
+    applicationId: string,
+    status: 'documents-required' | 'documents-complete'
+  ) {
+    const pipelineStage = status === 'documents-complete' ? 'Ready for Signing' : 'Documents Required';
+
+    const [updated] = await db
+      .update(applications)
+      .set({ pipelineStage, updatedAt: new Date() })
+      .where(eq(applications.id, applicationId))
+      .returning();
+
+    return updated ?? null;
+  },
 };
 
 export default applicationsRepo;

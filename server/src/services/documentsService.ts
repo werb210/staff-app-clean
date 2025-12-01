@@ -5,13 +5,13 @@ export interface DocumentRecord {
   id: string;
   applicationId: string;
   name: string;
-  category?: string | null;
-  azureBlobKey: string;
   mimeType: string;
-  checksum?: string | null;
-  sizeBytes?: number | null;
+  sizeBytes: number | null;
+  checksum: string | null;
+  azureBlobKey: string;
   status: string;
-  rejectionReason?: string | null;
+  rejectionReason: string | null;
+  category: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,13 +19,13 @@ export interface DocumentRecord {
 export interface DocumentCreateInput {
   applicationId: string;
   name: string;
+  mimeType: string;
   azureBlobKey: string;
-  mimeType?: string | null;
-  category?: string | null;
-  checksum?: string | null;
   sizeBytes?: number | null;
+  checksum?: string | null;
   status?: string;
   rejectionReason?: string | null;
+  category?: string | null;
 }
 
 const mapDocument = (doc: any): DocumentRecord | null => {
@@ -34,13 +34,13 @@ const mapDocument = (doc: any): DocumentRecord | null => {
     id: doc.id,
     applicationId: doc.applicationId,
     name: doc.name,
-    category: doc.category ?? null,
-    azureBlobKey: doc.azureBlobKey,
     mimeType: doc.mimeType,
-    checksum: doc.checksum ?? null,
     sizeBytes: doc.sizeBytes ?? null,
+    checksum: doc.checksum ?? null,
+    azureBlobKey: doc.azureBlobKey,
     status: doc.status,
     rejectionReason: doc.rejectionReason ?? null,
+    category: doc.category ?? null,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -61,8 +61,8 @@ export const documentsService = {
     const created = await documentsRepo.create({
       applicationId: data.applicationId,
       name: data.name,
+      mimeType: data.mimeType,
       category: data.category ?? null,
-      mimeType: data.mimeType ?? "application/octet-stream",
       azureBlobKey: data.azureBlobKey,
       checksum: data.checksum ?? null,
       sizeBytes: data.sizeBytes ?? null,
@@ -80,10 +80,10 @@ export const documentsService = {
       throw new Error("Document not found.");
     }
 
-    const priorVersions = await documentVersionsRepo.findMany({ documentId: id });
+    const versionNumber = (await documentVersionsRepo.findLatestVersion(id))?.versionNumber ?? 0;
     await documentVersionsRepo.create({
       documentId: id,
-      versionNumber: priorVersions.length + 1,
+      versionNumber: versionNumber + 1,
       azureBlobKey: existing.azureBlobKey,
       checksum: existing.checksum,
       sizeBytes: existing.sizeBytes,

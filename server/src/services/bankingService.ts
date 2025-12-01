@@ -39,7 +39,7 @@ export async function runAnalysis(applicationId: string) {
   for (const doc of bankDocs) {
     const sas = await documentService.getDocument(doc.id);
 
-    const response = await axios.get(sas.sasUrl, {
+    const response = await axios.get((sas as any).downloadUrl, {
       responseType: 'arraybuffer',
     });
 
@@ -154,6 +154,17 @@ Generate:
   });
 
   return saved;
+}
+
+export async function maybeRun(applicationId: string) {
+  const docs = await documentsRepo.findMany({ applicationId });
+  const hasBanking = docs.some(
+    (d) => d.category && ['bank_statement', 'flinks_report'].includes(d.category)
+  );
+
+  if (!hasBanking) return null;
+
+  return runAnalysis(applicationId);
 }
 
 //

@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../db.js';
 import { documentVersions } from '../schema/documentVersions.js';
 
@@ -40,6 +40,17 @@ export const documentVersionsRepo = {
     const query = db.select().from(documentVersions);
     if (where) query.where(where);
     return query;
+  },
+
+  async findLatestVersion(documentId: string) {
+    const [latest] = await db
+      .select()
+      .from(documentVersions)
+      .where(eq(documentVersions.documentId, documentId))
+      .orderBy(desc(documentVersions.versionNumber))
+      .limit(1);
+
+    return latest ?? null;
   },
 };
 

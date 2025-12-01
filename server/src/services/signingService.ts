@@ -69,17 +69,12 @@ export async function completeSigning(applicationId: string) {
   // Download signed PDF
   const pdfBuffer = await signNow.downloadSignedDocument(access, maybeSig.signNowDocumentId);
 
-  const upload = await blobService.uploadFile(
-    applicationId,
-    maybeSig.id, // reuse the signature record id
-    "signed_application.pdf",
-    pdfBuffer,
-    "application/pdf"
-  );
+  const key = `signatures/${applicationId}/${maybeSig.id}/signed_application.pdf`;
+  const upload = await blobService.uploadBuffer(pdfBuffer, key);
 
   // Update signature record
   const updated = await signaturesRepo.update(maybeSig.id, {
-    signedBlobKey: upload.blobKey,
+    signedBlobKey: upload.key,
   });
 
   // Pipeline: mark as signed → moves to "Off to Lender"
