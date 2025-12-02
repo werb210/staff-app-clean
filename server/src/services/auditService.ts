@@ -1,16 +1,18 @@
-import { auditLogsRepo } from "../db/repositories/auditLogs.repo.js";
+import auditLogsRepo from "../db/repositories/auditLogs.repo.js";
 
 export const auditService = {
   async log(event: string, payload: any, userId: string | null = null) {
-    return auditLogsRepo.insert({
-      event,
-      payload,
+    return auditLogsRepo.create({
+      eventType: event,
+      details: payload,
       userId,
-      createdAt: new Date()
+      createdAt: new Date(),
     });
   },
 
   async list(limit = 100) {
-    return auditLogsRepo.list(limit);
-  }
+    return auditLogsRepo.findMany({ limit });
+  },
 };
+
+export default auditService;
