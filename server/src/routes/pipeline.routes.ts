@@ -1,13 +1,10 @@
-// server/src/routes/pipeline.routes.ts
 import { Router } from "express";
-import * as pipelineController from "../controllers/pipelineController.js";
+import pipelineController from "../controllers/pipelineController.js";
 
 const router = Router();
 
-// Get pipeline history
-router.get("/application/:applicationId", pipelineController.getPipeline);
-
-// Manually change pipeline stage (staff only)
-router.post("/application/:applicationId/update", pipelineController.updateStage);
+// Only these 2 methods exist
+router.get("/application/:applicationId", pipelineController.get);
+router.post("/application/:applicationId/update", pipelineController.update);
 
 export default router;
