@@ -1,19 +1,25 @@
-import { productsRepo } from "../db/repositories/products.repo";
+import productsRepo from "../db/repositories/products.repo.js";
 
 export const productsService = {
-  async list() {
-    return productsRepo.listAll();
+  list() {
+    return productsRepo.findMany({});
   },
 
-  async get(id: string) {
-    return productsRepo.findById(id);
-  },
-
-  async create(data: any) {
+  create(data: any) {
     return productsRepo.create(data);
   },
 
-  async update(id: string, data: any) {
+  update(id: string, data: any) {
     return productsRepo.update(id, data);
-  }
+  },
+
+  remove(id: string) {
+    return productsRepo.delete(id);
+  },
+
+  get(id: string) {
+    return productsRepo.findById(id);
+  },
 };
+
+export default productsService;
