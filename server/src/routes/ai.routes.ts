@@ -3,6 +3,6 @@ import aiController from "../controllers/aiController.js";
 
 const router = Router();
 
-router.get("/test", aiController.test);
+router.post("/test", aiController.test);
 
 export default router;
