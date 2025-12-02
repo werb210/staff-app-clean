@@ -1,21 +1,21 @@
-import { smsQueueRepo } from "../db/repositories/smsQueue.repo";
+import smsQueueRepo from "../db/repositories/smsQueue.repo.js";
 
 export const smsQueueService = {
-  async enqueue(to: string, text: string, meta = {}) {
-    return smsQueueRepo.insert({
-      to,
-      text,
-      meta,
+  enqueue(data: any) {
+    return smsQueueRepo.create({
+      ...data,
+      createdAt: new Date(),
       status: "pending",
-      createdAt: new Date()
     });
   },
 
-  async listPending() {
-    return smsQueueRepo.listByStatus("pending");
+  listPending() {
+    return smsQueueRepo.findMany({ status: "pending" });
   },
 
-  async markSent(id: string) {
-    return smsQueueRepo.update(id, { status: "sent" });
-  }
+  update(id: string, data: any) {
+    return smsQueueRepo.update(id, data);
+  },
 };
+
+export default smsQueueService;
