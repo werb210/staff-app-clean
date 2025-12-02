@@ -1,20 +1,24 @@
-import { signaturesRepo } from "../db/repositories/signatures.repo";
+import signaturesRepo from "../db/repositories/signatures.repo.js";
 
 export const signingService = {
-  async markSent(applicationId: string, envelopeId: string) {
-    return signaturesRepo.insert({
+  requestSignature(applicationId: string, details: any) {
+    return signaturesRepo.create({
       applicationId,
-      envelopeId,
-      status: "sent",
-      createdAt: new Date()
+      details,
+      createdAt: new Date(),
     });
   },
 
-  async markCompleted(envelopeId: string, data: any) {
-    return signaturesRepo.updateByEnvelopeId(envelopeId, {
-      status: "completed",
-      completedAt: new Date(),
-      metadata: data
+  list(applicationId: string) {
+    return signaturesRepo.findMany({ applicationId });
+  },
+
+  listSignedDocuments(applicationId: string) {
+    return signaturesRepo.findMany({
+      applicationId,
+      signedBlobKey: { not: null },
     });
-  }
+  },
 };
+
+export default signingService;
