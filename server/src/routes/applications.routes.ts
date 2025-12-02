@@ -3,11 +3,10 @@ import applicationsController from "../controllers/applicationsController.js";
 
 const router = Router();
 
-// List & create exist
 router.get("/", applicationsController.list);
 router.post("/", applicationsController.create);
-
-// Update exists
 router.put("/:id", applicationsController.update);
+// remove does not exist → route removed
+// get does not exist → route removed
 
 export default router;
