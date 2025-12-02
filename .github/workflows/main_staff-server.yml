@@ -22,22 +22,21 @@ jobs:
         working-directory: server
         run: npm ci
 
-      - name: Build project
+      - name: Build
         working-directory: server
         run: npm run build
 
-      - name: Prepare Azure ZIP
+      - name: Create deployment package
         run: |
-          mkdir output
-          cp -r server/* output/
-          rm -rf output/src
-          rm -rf output/node_modules
-          npm --prefix server install --omit=dev --production
-          cp -r server/node_modules output/node_modules
+          mkdir deploy
+          cp -r server/dist deploy/dist
+          cp server/package.json deploy/
+          cp server/package-lock.json deploy/
+          cp -r server/node_modules deploy/node_modules
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: output
+          package: deploy
