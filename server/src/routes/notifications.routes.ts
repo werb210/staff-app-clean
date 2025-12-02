@@ -1,13 +1,10 @@
-// server/src/routes/notifications.routes.ts
 import { Router } from "express";
-import { notificationsController } from "../controllers/notificationsController.js";
+import notificationsController from "../controllers/notificationsController.js";
 
 const router = Router();
 
 router.get("/", notificationsController.list);
-router.get("/:id", notificationsController.get);
-router.post("/", notificationsController.create);
-router.put("/:id", notificationsController.update);
-router.delete("/:id", notificationsController.remove);
+
+// No get/create/update/delete exist → removed
 
 export default router;
