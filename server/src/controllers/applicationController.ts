@@ -4,22 +4,23 @@ import applicationsRepo from "../db/repositories/applications.repo.js";
 
 export const applicationController = {
   startApplication: asyncHandler(async (req: Request, res: Response) => {
+    const payload = req.body ?? {};
     const created = await applicationsRepo.create({
       status: "in_progress",
-      pipelineStage: "requires_docs",
-      currentStep: "start",
-      formData: req.body ?? {},
-      applicantEmail: req.body?.email ?? null,
+      currentStep: payload.currentStep ?? "1",
+      applicantEmail: payload.applicantEmail ?? null,
+      formData: payload.formData ?? {},
     });
-    res.json(created);
+    res.status(201).json(created);
   }),
 
   updateStep: asyncHandler(async (req: Request, res: Response) => {
     const { applicationId } = req.params;
+    const { currentStep, formData } = req.body ?? {};
 
     const updated = await applicationsRepo.update(applicationId, {
-      currentStep: req.body.step,
-      formData: req.body.data,
+      currentStep,
+      formData,
     });
 
     if (!updated) return res.status(404).json({ error: "Not found" });
@@ -28,7 +29,6 @@ export const applicationController = {
 
   submitApplication: asyncHandler(async (req: Request, res: Response) => {
     const { applicationId } = req.params;
-
     const updated = await applicationsRepo.update(applicationId, {
       status: "submitted",
       submittedAt: new Date(),
@@ -40,7 +40,6 @@ export const applicationController = {
 
   getApplication: asyncHandler(async (req: Request, res: Response) => {
     const { applicationId } = req.params;
-
     const row = await applicationsRepo.findById(applicationId);
     if (!row) return res.status(404).json({ error: "Not found" });
     res.json(row);
