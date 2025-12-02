@@ -12,9 +12,10 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": false,
-    "noEmit": false,
-    "outDir": "dist",
-    "rootDir": "src",
+
+    "outDir": "./dist",
+    "rootDir": "./src",
+
     "types": ["node"],
     "paths": {
       "@/*": ["src/*"]
