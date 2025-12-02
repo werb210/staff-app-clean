@@ -1,13 +1,12 @@
-import { communicationsRepo } from "../db/repositories/messages.repo"; // same table
-import { emailService } from "./emailService";
-import { smsService } from "./smsService";
+import messagesRepo from "../db/repositories/messages.repo.js";
 
 export const communicationService = {
-  async sendEmail(to: string, subject: string, body: string) {
-    return emailService.send(to, subject, body);
+  async sendMessage(payload: any) {
+    return messagesRepo.create({
+      ...payload,
+      createdAt: new Date(),
+    });
   },
-
-  async sendSMS(to: string, text: string) {
-    return smsService.send(to, text);
-  }
 };
+
+export default communicationService;
