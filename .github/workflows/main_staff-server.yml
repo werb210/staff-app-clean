@@ -2,43 +2,39 @@ name: Deploy Staff Server to Azure
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: 20
 
       - name: Install dependencies
+        working-directory: server
         run: npm ci
 
       - name: Build project
+        working-directory: server
         run: npm run build
 
-      # Copy ONLY required runtime files
       - name: Prepare Azure ZIP
         run: |
           mkdir output
-          cp package.json output/
-          cp package-lock.json output/
-          cp -R dist output/
-          cp -R prisma output/
-          # include any startup scripts if needed
-          cd output
-          npm ci --omit=dev
-
-          zip -r ../release.zip .
+          cp -r server/dist output/
+          cp server/package.json output/
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: release.zip
+          package: output
