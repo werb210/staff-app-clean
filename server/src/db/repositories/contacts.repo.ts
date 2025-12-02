@@ -17,6 +17,7 @@ const safeDetails = (value: any): Record<string, unknown> => {
 
 const mapRecord = (record: any) => {
   if (!record) return null;
+
   const details = safeDetails(record.details);
 
   return {
@@ -30,7 +31,10 @@ export const contactsRepo = {
   async create(data: Record<string, unknown>) {
     const [created] = await db
       .insert(auditLogs)
-      .values({ eventType: "contact", details: safeDetails(data) })
+      .values({
+        eventType: "contact",
+        details: safeDetails(data),
+      })
       .returning();
 
     return mapRecord(created);
