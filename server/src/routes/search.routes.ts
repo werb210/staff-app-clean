@@ -3,6 +3,7 @@ import searchController from "../controllers/searchController.js";
 
 const router = Router();
 
-router.get("/", searchController.globalSearch);
+// Only search() exists
+router.get("/", searchController.search);
 
 export default router;
