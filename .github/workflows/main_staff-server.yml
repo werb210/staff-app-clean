@@ -18,9 +18,9 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: Install production dependencies
         working-directory: server
-        run: npm ci
+        run: npm ci --omit=dev
 
       - name: Build
         working-directory: server
