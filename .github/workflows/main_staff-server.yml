@@ -22,10 +22,9 @@ jobs:
         working-directory: server
         run: npm ci
 
-      - name: Build WITHOUT type checking
+      - name: Build with tsconfig.deploy.json (NO type checks)
         working-directory: server
-        run: |
-          npx tsc --project tsconfig.build.json --skipLibCheck --noEmit false --pretty false --strict false
+        run: npx tsc -p tsconfig.deploy.json
 
       - name: Create deployment package
         run: |
