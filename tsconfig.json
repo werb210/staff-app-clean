@@ -11,14 +11,16 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
+    "isolatedModules": false,
+
+    "outDir": "./dist",
+    "rootDir": "./",
+
     "types": ["node"],
-    "baseUrl": "./",
     "paths": {
-      "@/*": ["server/src/*"]
+      "@/*": ["./*"]
     }
   },
-  "include": ["server/src"],
+  "include": ["./"],
   "exclude": ["node_modules", "dist"]
 }
