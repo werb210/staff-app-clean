@@ -1,20 +1,18 @@
-import jwt from "jsonwebtoken";
-import { env } from "../config/env.js";
+// server/src/services/tokenService.ts
+import { signToken, verifyToken } from "../utils/jwt.js";
 
 export const tokenService = {
   issue(user: any) {
-    return jwt.sign(
-      {
-        id: user.id,
-        role: user.role,
-        silo: user.silo,
-      },
-      env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    return signToken({
+      id: user.id,
+      role: user.role,
+      silo: user.silo,
+    });
   },
 
   verify(token: string) {
-    return jwt.verify(token, env.JWT_SECRET) as any;
-  }
+    return verifyToken(token);
+  },
 };
+
+export default tokenService;
