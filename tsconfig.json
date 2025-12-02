@@ -14,11 +14,11 @@
     "isolatedModules": true,
     "noEmit": true,
     "types": ["node"],
+    "baseUrl": "./",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["server/src/*"]
     }
   },
-
-  "include": ["src"],
+  "include": ["server/src"],
   "exclude": ["node_modules", "dist"]
 }
