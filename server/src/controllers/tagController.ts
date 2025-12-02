@@ -4,14 +4,26 @@ import asyncHandler from "../utils/asyncHandler.js";
 
 const mapTag = (record: any) => {
   if (!record || record.eventType !== "tag") return null;
-  const details = (record.details ?? {}) as Record<string, unknown>;
-  return { id: record.id, ...details, createdAt: record.createdAt } as any;
+
+  const details =
+    (record.details && typeof record.details === "object"
+      ? record.details
+      : {}) as Record<string, unknown>;
+
+  return {
+    id: record.id,
+    ...details,
+    createdAt: record.createdAt,
+  };
 };
 
 export const tagController = {
   list: asyncHandler(async (_req: Request, res: Response) => {
     const records = await auditLogsRepo.findMany({ eventType: "tag" });
-    const data = (records as any[]).map(mapTag).filter(Boolean);
+    const data = (records as any[])
+      .map(mapTag)
+      .filter((x) => x !== null);
+
     res.status(200).json({ success: true, data });
   }),
 
@@ -19,7 +31,9 @@ export const tagController = {
     const { name, color = null } = req.body ?? {};
 
     if (!name || typeof name !== "string") {
-      return res.status(400).json({ success: false, error: "Missing or invalid 'name'" });
+      return res
+        .status(400)
+        .json({ success: false, error: "Missing or invalid 'name'" });
     }
 
     const created = await auditLogsRepo.create({
@@ -36,16 +50,26 @@ export const tagController = {
 
     const existing = await auditLogsRepo.findById(id);
     if (!existing || existing.eventType !== "tag") {
-      return res.status(404).json({ success: false, error: "Tag not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Tag not found" });
     }
 
-    const mergedDetails = {
-      ...(existing.details ?? {}),
+    // SAFELY convert existing.details into an object before spreading
+    const base =
+      existing.details && typeof existing.details === "object"
+        ? (existing.details as Record<string, unknown>)
+        : {};
+
+    const mergedDetails: Record<string, unknown> = {
+      ...base,
       ...(name !== undefined ? { name } : {}),
       ...(color !== undefined ? { color } : {}),
-    } as Record<string, unknown>;
+    };
 
-    const updated = await auditLogsRepo.update(id, { details: mergedDetails } as any);
+    const updated = await auditLogsRepo.update(id, {
+      details: mergedDetails,
+    } as any);
 
     res.status(200).json({ success: true, data: mapTag(updated) });
   }),
@@ -55,7 +79,9 @@ export const tagController = {
     const deleted = await auditLogsRepo.delete(id);
 
     if (!deleted || deleted.eventType !== "tag") {
-      return res.status(404).json({ success: false, error: "Tag not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Tag not found" });
     }
 
     res.status(200).json({ success: true, data: mapTag(deleted) });
