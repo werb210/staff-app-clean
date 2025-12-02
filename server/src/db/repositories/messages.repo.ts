@@ -2,15 +2,28 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../db.js';
 import { messages } from '../schema/messages.js';
 
-const buildWhere = (filter: Partial<typeof messages.$inferSelect> = {}) => {
+const buildWhere = (filter: Record<string, any> = {}) => {
   const conditions = Object.entries(filter)
     .filter(([, value]) => value !== undefined)
-    .map(([key, value]) => eq((messages as any)[key], value as any));
+    .flatMap(([key, value]) => {
+      const column = (messages as any)[key];
+      if (!column) return [];
+      return eq(column, value as any);
+    });
   if (conditions.length === 0) return undefined;
-  return conditions.length === 1 ? conditions[0] : and(...conditions);
+  return conditions.length === 1 ? (conditions[0] as any) : and(...conditions as any);
 };
 
 export const messagesRepo = {
+  async findOne(filter: Record<string, any> = {}) {
+    const rows = await messagesRepo.findMany(filter);
+    return rows[0] ?? null;
+  },
+
+  async thread(applicationId: string) {
+    return messagesRepo.findMany({ applicationId });
+  },
+
   async create(data: Partial<typeof messages.$inferInsert>) {
     const [created] = await db.insert(messages).values(data as any).returning();
     return created;
@@ -35,7 +48,7 @@ export const messagesRepo = {
     return record ?? null;
   },
 
-  async findMany(filter: Partial<typeof messages.$inferSelect> = {}) {
+  async findMany(filter: Record<string, any> = {}) {
     const where = buildWhere(filter);
     const query = db.select().from(messages);
     if (where) query.where(where);

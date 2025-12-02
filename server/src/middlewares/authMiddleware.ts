@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyJwt } from "../services/authService.js";
+import { tokenService } from "../services/tokenService.js";
 
 export async function authGuard(
   req: Request,
@@ -10,7 +10,7 @@ export async function authGuard(
   if (!header) return res.status(401).json({ error: "Missing auth header" });
 
   const token = header.replace("Bearer ", "");
-  const user = await verifyJwt(token);
+  const user = tokenService.verify(token);
   if (!user) return res.status(401).json({ error: "Invalid token" });
 
   (req as any).user = user;

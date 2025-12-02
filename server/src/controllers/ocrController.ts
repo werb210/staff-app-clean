@@ -9,7 +9,7 @@ export const ocrController = {
     // No OCR engine here — this controller only mirrors stored results
     const record = await ocrRepo.create({
       documentId,
-      results: req.body ?? {},
+      fields: req.body ?? {},
     });
 
     res.json(record);

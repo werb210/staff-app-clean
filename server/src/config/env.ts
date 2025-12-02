@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const env = {
-  PORT: Number(process.env.PORT || 5000),
+  PORT: Number(process.env.PORT || process.env.WEBSITES_PORT || 8080),
   DATABASE_URL: process.env.DATABASE_URL || "",
   AZURE_STORAGE_ACCOUNT:
     process.env.AZURE_STORAGE_ACCOUNT || process.env.BLOB_ACCOUNT || "",

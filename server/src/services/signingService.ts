@@ -5,6 +5,8 @@ export const signingService = {
     return signaturesRepo.create({
       applicationId,
       details,
+      signedBlobKey: details?.signedBlobKey ?? null,
+      signNowDocumentId: details?.signNowDocumentId ?? null,
       createdAt: new Date(),
     });
   },
@@ -14,10 +16,9 @@ export const signingService = {
   },
 
   listSignedDocuments(applicationId: string) {
-    return signaturesRepo.findMany({
-      applicationId,
-      signedBlobKey: { not: null },
-    });
+    return signaturesRepo
+      .findMany({ applicationId })
+      .then((rows) => rows.filter((row) => Boolean(row.signedBlobKey)));
   },
 };
 

@@ -12,6 +12,22 @@ const buildWhere = (filter: Partial<typeof applications.$inferSelect> = {}) => {
 };
 
 export const applicationsRepo = {
+  async findOne(filter: Partial<typeof applications.$inferSelect> = {}) {
+    const rows = await applicationsRepo.findMany(filter);
+    return rows[0] ?? null;
+  },
+
+  async search(term: string) {
+    // Placeholder search that returns all records for now
+    const rows = await applicationsRepo.findMany();
+    const lower = term.toLowerCase();
+    return rows.filter((row: any) =>
+      Object.values(row).some((value) =>
+        typeof value === "string" ? value.toLowerCase().includes(lower) : false
+      ),
+    );
+  },
+
   async create(data: Partial<typeof applications.$inferInsert>) {
     const [created] = await db.insert(applications).values(data as any).returning();
     return created;

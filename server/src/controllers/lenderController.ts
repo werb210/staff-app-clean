@@ -9,6 +9,13 @@ export const lenderController = {
     if (!record) return res.status(404).json({ error: "Not found" });
     res.json(record);
   }),
+
+  match: asyncHandler(async (req: Request, res: Response) => {
+    const { applicationId } = req.params;
+    const record = await lendersRepo.findById(applicationId);
+    if (!record) return res.status(404).json({ error: "No match" });
+    res.json({ match: record });
+  }),
 };
 
 export default lenderController;
