@@ -11,8 +11,10 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
+    "isolatedModules": false,
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": "src",
     "types": ["node"],
     "paths": {
       "@/*": ["src/*"]
