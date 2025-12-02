@@ -1,40 +1,29 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "../db.js";
 import { auditLogs } from "../schema/audit.js";
 
-const buildWhere = (filter: Record<string, unknown> = {}) => {
-  const conditions = Object.entries(filter)
-    .filter(([, value]) => value !== undefined)
-    .map(([key, value]) => eq((auditLogs as any)[key], value as any));
+const safe = (v: any) => (v && typeof v === "object" ? v : {});
 
-  if (conditions.length === 0) return undefined;
-  return conditions.length === 1 ? conditions[0] : and(...conditions);
-};
-
-const safeDetails = (value: any): Record<string, unknown> => {
-  return value && typeof value === "object" ? value : {};
-};
-
-const mapRecord = (record: any) => {
-  if (!record) return null;
-
-  const details = safeDetails(record.details);
-
-  return {
-    id: record.id,
-    ...details,
-    createdAt: record.createdAt,
-  };
-};
+const map = (r: any) =>
+  !r
+    ? null
+    : {
+        id: r.id,
+        ...safe(r.details),
+        createdAt: r.createdAt,
+      };
 
 export const companiesRepo = {
   async create(data: Record<string, unknown>) {
     const [created] = await db
       .insert(auditLogs)
-      .values({ eventType: "company", details: safeDetails(data) })
+      .values({
+        eventType: "company",
+        details: safe(data),
+      })
       .returning();
 
-    return mapRecord(created);
+    return map(created);
   },
 
   async update(id: string, data: Record<string, unknown>) {
@@ -45,10 +34,7 @@ export const companiesRepo = {
 
     if (!existing || existing.eventType !== "company") return null;
 
-    const merged = {
-      ...safeDetails(existing.details),
-      ...safeDetails(data),
-    };
+    const merged = { ...safe(existing.details), ...safe(data) };
 
     const [updated] = await db
       .update(auditLogs)
@@ -56,7 +42,7 @@ export const companiesRepo = {
       .where(eq(auditLogs.id, id))
       .returning();
 
-    return mapRecord(updated);
+    return map(updated);
   },
 
   async delete(id: string) {
@@ -65,7 +51,7 @@ export const companiesRepo = {
       .where(eq(auditLogs.id, id))
       .returning();
 
-    return mapRecord(deleted);
+    return map(deleted);
   },
 
   async findById(id: string) {
@@ -76,24 +62,13 @@ export const companiesRepo = {
 
     if (!record || record.eventType !== "company") return null;
 
-    return mapRecord(record);
+    return map(record);
   },
 
-  async findMany(filter: Record<string, unknown> = {}) {
-    const where = buildWhere({
-      ...safeDetails(filter),
-      eventType: "company",
-    });
-
-    const query = db.select().from(auditLogs);
-    if (where) query.where(where);
-
-    const results = await query;
-
-    return results
-      .filter((r) => r.eventType === "company")
-      .map(mapRecord)
-      .filter(Boolean);
+  async findMany() {
+    const where = eq(auditLogs.eventType, "company");
+    const results = await db.select().from(auditLogs).where(where);
+    return results.map(map).filter(Boolean);
   },
 };
 
