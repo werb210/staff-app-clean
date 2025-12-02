@@ -1,13 +1,9 @@
-// server/src/routes/lenders.ts
-import { Router } from 'express';
-import * as lenderController from '../controllers/lenderController.js';
+import { Router } from "express";
+import lenderController from "../controllers/lenderController.js";
 
 const router = Router();
 
-// Get matches for an application
-router.get('/match/:applicationId', lenderController.matchLenders);
-
-// Send lender packet to a specific lender
-router.post('/send/:applicationId/:lenderId', lenderController.sendToLender);
+// Only valid method in the new lenderController
+router.get("/match/:applicationId", lenderController.match);
 
 export default router;
