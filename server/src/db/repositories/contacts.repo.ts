@@ -1,102 +1,57 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "../db.js";
-import { auditLogs } from "../schema/audit.js";
-
-const buildWhere = (filter: Record<string, unknown> = {}) => {
-  const conditions = Object.entries(filter)
-    .filter(([, value]) => value !== undefined)
-    .map(([key, value]) => eq((auditLogs as any)[key], value as any));
-
-  if (conditions.length === 0) return undefined;
-  return conditions.length === 1 ? conditions[0] : and(...conditions);
-};
-
-const safeDetails = (value: any): Record<string, unknown> => {
-  return value && typeof value === "object" ? value : {};
-};
-
-const mapRecord = (record: any) => {
-  if (!record) return null;
-
-  const details = safeDetails(record.details);
-
-  return {
-    id: record.id,
-    ...details,
-    createdAt: record.createdAt,
-  };
-};
+import { contacts } from "../schema/contacts.js";
 
 export const contactsRepo = {
-  async create(data: Record<string, unknown>) {
-    const [created] = await db
-      .insert(auditLogs)
-      .values({
-        eventType: "contact",
-        details: safeDetails(data),
-      })
-      .returning();
-
-    return mapRecord(created);
+  async create(data: {
+    firstName: string;
+    lastName?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    companyId?: string | null;
+    position?: string | null;
+  }) {
+    const [created] = await db.insert(contacts).values(data).returning();
+    return created;
   },
 
-  async update(id: string, data: Record<string, unknown>) {
-    const [existing] = await db
-      .select()
-      .from(auditLogs)
-      .where(eq(auditLogs.id, id));
-
-    if (!existing || existing.eventType !== "contact") return null;
-
-    const merged = {
-      ...safeDetails(existing.details),
-      ...safeDetails(data),
-    };
-
+  async update(id: string, data: Partial<typeof contacts.$inferInsert>) {
     const [updated] = await db
-      .update(auditLogs)
-      .set({ details: merged })
-      .where(eq(auditLogs.id, id))
+      .update(contacts)
+      .set(data)
+      .where(eq(contacts.id, id))
       .returning();
 
-    return mapRecord(updated);
+    return updated ?? null;
   },
 
   async delete(id: string) {
     const [deleted] = await db
-      .delete(auditLogs)
-      .where(eq(auditLogs.id, id))
+      .delete(contacts)
+      .where(eq(contacts.id, id))
       .returning();
-
-    return mapRecord(deleted);
+    return deleted ?? null;
   },
 
   async findById(id: string) {
     const [record] = await db
       .select()
-      .from(auditLogs)
-      .where(eq(auditLogs.id, id));
+      .from(contacts)
+      .where(eq(contacts.id, id));
 
-    if (!record || record.eventType !== "contact") return null;
-
-    return mapRecord(record);
+    return record ?? null;
   },
 
-  async findMany(filter: Record<string, unknown> = {}) {
-    const where = buildWhere({
-      ...safeDetails(filter),
-      eventType: "contact",
-    });
+  async findMany(filter: Partial<typeof contacts.$inferSelect> = {}) {
+    let query = db.select().from(contacts);
 
-    const query = db.select().from(auditLogs);
-    if (where) query.where(where);
+    for (const [key, value] of Object.entries(filter)) {
+      if (value !== undefined) {
+        query = query.where(eq((contacts as any)[key], value));
+      }
+    }
 
-    const results = await query;
-
-    return results
-      .filter((r) => r.eventType === "contact")
-      .map(mapRecord)
-      .filter(Boolean);
+    return await query;
   },
 };
 
