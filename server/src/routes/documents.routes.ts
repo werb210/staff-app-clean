@@ -1,12 +1,10 @@
+// server/src/routes/documents.routes.ts
 import { Router } from "express";
-import { documentsController } from "../controllers/documentsController.js";
+import documentsController from "../controllers/documentsController.js";
 
 const router = Router();
 
-router.get("/", documentsController.list);
-router.get("/:id", documentsController.get);
-router.post("/", documentsController.create);
-router.put("/:id", documentsController.update);
-router.delete("/:id", documentsController.remove);
+router.get("/application/:applicationId", documentsController.list);
+router.post("/", documentsController.upload);
 
 export default router;
