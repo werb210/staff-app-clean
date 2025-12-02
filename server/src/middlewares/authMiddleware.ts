@@ -1,17 +1,28 @@
-// server/src/middlewares/authMiddleware.ts
 import { Request, Response, NextFunction } from "express";
-import { verifyToken } from "../utils/jwt.js";
+import { verifyJwt } from "../services/authService.js";
 
-export async function authGuard(req: Request, res: Response, next: NextFunction) {
-  try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    if (!token) return res.status(401).json({ error: "Unauthorized" });
+export async function authGuard(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const header = req.headers.authorization;
+  if (!header) return res.status(401).json({ error: "Missing auth header" });
 
-    const decoded = verifyToken(token);
-    (req as any).user = decoded;
+  const token = header.replace("Bearer ", "");
+  const user = await verifyJwt(token);
+  if (!user) return res.status(401).json({ error: "Invalid token" });
 
+  (req as any).user = user;
+  next();
+}
+
+export function roleGuard(roles: string[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    if (!user || !roles.includes(user.role)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
     next();
-  } catch {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+  };
 }
