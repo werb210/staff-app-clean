@@ -1,12 +1,17 @@
 {
-  "name": "staff-server",
+  "name": "staff-server-core",
   "version": "1.0.0",
   "private": true,
-  "type": "commonjs",
+  "main": "dist/index.js",
   "scripts": {
+    "dev": "nodemon src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js"
   },
   "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "nodemon": "^3.0.2",
+    "typescript": "^5.6.3"
+  }
 }
