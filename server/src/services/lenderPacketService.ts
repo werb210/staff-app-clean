@@ -1,5 +1,5 @@
 import WebSocket, { WebSocketServer } from "ws";
-import { verifyJwt } from "../services/authService.js";
+import { tokenService } from "./tokenService.js";
 import { chatService } from "../services/chatService.js";
 
 export const initWebSocket = (server: any) => {
@@ -9,10 +9,10 @@ export const initWebSocket = (server: any) => {
     const token = new URL(req.url, "http://x").searchParams.get("token");
     if (!token) return ws.close();
 
-    const user = await verifyJwt(token);
+    const user = tokenService.verify(token);
     if (!user) return ws.close();
 
-    ws.on("message", async (msg) => {
+    ws.on("message", async (msg: WebSocket.RawData) => {
       try {
         const data = JSON.parse(msg.toString());
         const { applicationId, body } = data;

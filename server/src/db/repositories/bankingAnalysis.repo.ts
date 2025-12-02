@@ -11,6 +11,16 @@ const buildWhere = (filter: Partial<typeof bankingAnalysis.$inferSelect> = {}) =
 };
 
 export const bankingAnalysisRepo = {
+  async findOne(filter: Partial<typeof bankingAnalysis.$inferSelect> = {}) {
+    const rows = await bankingAnalysisRepo.findMany(filter);
+    return rows[0] ?? null;
+  },
+
+  async findByApplication(applicationId: string) {
+    const rows = await bankingAnalysisRepo.findMany({ applicationId });
+    return rows[0] ?? null;
+  },
+
   async create(data: Partial<typeof bankingAnalysis.$inferInsert>) {
     const [created] = await db.insert(bankingAnalysis).values(data as any).returning();
     return created;

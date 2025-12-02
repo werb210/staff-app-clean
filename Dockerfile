@@ -5,9 +5,15 @@ WORKDIR /app
 RUN apk add --no-cache bash
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+COPY server/package*.json ./server/
+
+RUN npm ci --ignore-scripts
+RUN npm ci --prefix server
 
 COPY . .
 
-EXPOSE 5000
-CMD ["bash", "startup.sh"]
+RUN npm run build
+
+ENV PORT=8080
+EXPOSE 8080
+CMD ["node", "server/dist/index.js"]

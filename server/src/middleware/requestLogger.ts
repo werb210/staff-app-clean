@@ -7,12 +7,9 @@ export default async function requestLogger(
   next: NextFunction
 ) {
   try {
-    await auditService.logEvent({
-      eventType: "REQUEST",
-      details: {
-        method: req.method,
-        url: req.originalUrl,
-      },
+    await auditService.log("REQUEST", {
+      method: req.method,
+      url: req.originalUrl,
     });
   } catch {}
 

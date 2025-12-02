@@ -7,6 +7,11 @@ const pipelineHistory: Array<{
 }> = [];
 
 export const pipelineRepo = {
+  async findByApplication(applicationId: string) {
+    const stage = pipelinePositions.get(applicationId) ?? null;
+    return stage ? { applicationId, stageId: stage } : null;
+  },
+
   async listByStage(stageId: string) {
     return Array.from(pipelinePositions.entries())
       .filter(([, stage]) => stage === stageId)
@@ -16,6 +21,10 @@ export const pipelineRepo = {
   async move(applicationId: string, toStageId: string) {
     pipelinePositions.set(applicationId, toStageId);
     return { applicationId, stageId: toStageId };
+  },
+
+  async updateStage(applicationId: string, toStageId: string) {
+    return pipelineRepo.move(applicationId, toStageId);
   },
 
   async moveWithHistory(applicationId: string, fromStage: string, toStage: string) {

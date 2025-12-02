@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "postinstall": "npm --prefix server ci",
     "build": "cd server && npm run build",
-    "start": "cd server && npm start",
+    "start": "npm run build && node server/dist/index.js",
     "dev": "cd server && npm run dev"
   }
 }

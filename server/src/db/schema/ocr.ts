@@ -4,6 +4,7 @@ import { pgTable, uuid, jsonb, timestamp, text } from 'drizzle-orm/pg-core';
 export const ocrResults = pgTable('ocr_results', {
   id: uuid('id').primaryKey().defaultRandom(),
 
+  applicationId: uuid('application_id'),
   documentId: uuid('document_id').notNull(),
 
   // Full structured OCR output

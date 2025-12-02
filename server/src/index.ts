@@ -1,7 +1,7 @@
 import http from "http";
 import { app } from "./app.js";
 import { ENV } from "./config/env.js";
-import { initWebsocket } from "./realtime/ws.js";
+import { initWebSocket } from "./realtime/ws.js";
 
 const server = http.createServer(app);
 
@@ -11,4 +11,4 @@ server.listen(PORT, () => {
   console.log(`🚀 Staff-Server running on port ${PORT}`);
 });
 
-initWebsocket(server);
+initWebSocket(server);

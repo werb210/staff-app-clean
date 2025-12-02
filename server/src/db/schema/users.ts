@@ -6,6 +6,8 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
 
+  role: text('role').notNull().default('STAFF'),
+
   // Example:
   // { BF: { role: "ADMIN" }, BI: { role: "STAFF" }, SLF: null }
   siloAccess: jsonb('silo_access').notNull(),

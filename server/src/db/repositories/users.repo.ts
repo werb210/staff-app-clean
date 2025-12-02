@@ -12,6 +12,11 @@ const buildWhere = (filter: Partial<typeof users.$inferSelect> = {}) => {
 };
 
 export const usersRepo = {
+  async findOne(filter: Partial<typeof users.$inferSelect> = {}) {
+    const results = await usersRepo.findMany(filter);
+    return results[0] ?? null;
+  },
+
   async create(data: Partial<typeof users.$inferInsert>) {
     const [created] = await db.insert(users).values(data as any).returning();
     return created;

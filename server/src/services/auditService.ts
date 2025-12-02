@@ -11,7 +11,8 @@ export const auditService = {
   },
 
   async list(limit = 100) {
-    return auditLogsRepo.findMany({ limit });
+    const rows = await auditLogsRepo.findMany({});
+    return rows.slice(0, limit);
   },
 };
 
