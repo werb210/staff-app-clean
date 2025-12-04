@@ -1,77 +1,49 @@
-import { eq } from "drizzle-orm";
-import { db } from "../db.js";
-import { auditLogs } from "../schema/audit.js";
+// server/src/db/repositories/contacts.repo.ts
+// Temporary stub implementation so the server compiles and runs.
+// Controllers and services can call these methods; they will clearly throw
+// until we wire them to the real database.
 
-const safe = (v: any) => (v && typeof v === "object" ? v : {});
+export type ContactPayload = {
+  id?: string;
+  companyId?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  title?: string | null;
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
+  [key: string]: unknown;
+};
 
-const map = (r: any) =>
-  !r
-    ? null
-    : {
-        id: r.id,
-        ...safe(r.details),
-        createdAt: r.createdAt,
-      };
+const notImplemented = (method: string) => {
+  throw new Error(`contactsRepo.${method} is not implemented yet`);
+};
 
-export const contactsRepo = {
-  async create(data: Record<string, unknown>) {
-    const [created] = await db
-      .insert(auditLogs)
-      .values({
-        eventType: "contact",
-        details: safe(data),
-      })
-      .returning();
-
-    return map(created);
+const contactsRepo = {
+  async getAll(): Promise<ContactPayload[]> {
+    notImplemented("getAll");
   },
 
-  async update(id: string, data: Record<string, unknown>) {
-    const [existing] = await db
-      .select()
-      .from(auditLogs)
-      .where(eq(auditLogs.id, id));
-
-    if (!existing || existing.eventType !== "contact") return null;
-
-    const merged = { ...safe(existing.details), ...safe(data) };
-
-    const [updated] = await db
-      .update(auditLogs)
-      .set({ details: merged })
-      .where(eq(auditLogs.id, id))
-      .returning();
-
-    return map(updated);
+  async getById(id: string): Promise<ContactPayload | null> {
+    notImplemented("getById");
   },
 
-  async delete(id: string) {
-    const [deleted] = await db
-      .delete(auditLogs)
-      .where(eq(auditLogs.id, id))
-      .returning();
-
-    return map(deleted);
+  async create(payload: ContactPayload): Promise<ContactPayload> {
+    notImplemented("create");
   },
 
-  async findById(id: string) {
-    const [record] = await db
-      .select()
-      .from(auditLogs)
-      .where(eq(auditLogs.id, id));
-
-    if (!record || record.eventType !== "contact") return null;
-
-    return map(record);
+  async update(id: string, payload: ContactPayload): Promise<ContactPayload> {
+    notImplemented("update");
   },
 
-  async findMany() {
-    const results = await db
-      .select()
-      .from(auditLogs)
-      .where(eq(auditLogs.eventType, "contact"));
+  async delete(id: string): Promise<{ id: string }> {
+    notImplemented("delete");
+  },
 
-    return results.map(map).filter(Boolean);
+  // Optional helper for searchService etc.
+  async searchByQuery(_q: string): Promise<ContactPayload[]> {
+    notImplemented("searchByQuery");
   },
 };
 
