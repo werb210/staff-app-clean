@@ -6,11 +6,13 @@ export interface Company {
 
 const companies: Company[] = [
   { id: "1", name: "Acme Corp" },
-  { id: "2", name: "Globex Ltd" }
+  { id: "2", name: "Globex Ltd" },
 ];
 
-export default {
-  findMany: async (_filter?: any): Promise<Company[]> => {
+const companiesRepo = {
+  async findMany(_filter?: any): Promise<Company[]> {
     return companies;
-  }
+  },
 };
+
+export default companiesRepo;
