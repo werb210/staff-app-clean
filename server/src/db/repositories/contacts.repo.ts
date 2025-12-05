@@ -7,11 +7,14 @@ export interface Contact {
 
 const contacts: Contact[] = [
   { id: "1", name: "John Doe", email: "john@example.com" },
-  { id: "2", name: "Sarah Smith", phone: "555-0101" }
+  { id: "2", name: "Sarah Smith", phone: "555-0101" },
 ];
 
-export default {
-  findMany: async (_filter?: any): Promise<Contact[]> => {
+const contactsRepo = {
+  // allow an optional filter object, but ignore it for now
+  async findMany(_filter?: any): Promise<Contact[]> {
     return contacts;
-  }
+  },
 };
+
+export default contactsRepo;
