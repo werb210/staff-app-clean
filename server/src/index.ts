@@ -1,14 +1,10 @@
-import http from "http";
-import { app } from "./app.js";
-import { ENV } from "./config/env.js";
-import { initWebSocket } from "./realtime/ws.js";
+import app from "./app.js";
+import { createServer } from "http";
 
-const server = http.createServer(app);
+const PORT = process.env.PORT || 5000;
 
-const PORT = ENV.PORT || 5000;
+const httpServer = createServer(app);
 
-server.listen(PORT, () => {
-  console.log(`🚀 Staff-Server running on port ${PORT}`);
+httpServer.listen(PORT, () => {
+  console.log(`Staff Server running on port ${PORT}`);
 });
-
-initWebSocket(server);
